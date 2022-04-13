@@ -1,0 +1,14 @@
+{
+  "resolves": [
+    {
+      "requires": [],
+      "packageRequires": {},
+      "version": "1.0.0",
+      "organization": "ystyle",
+      "foreign_requires": {},
+      "name": "echo",
+      "path": "./",
+      "hash": "-2010658456054897997"
+    }
+  ]
+}
