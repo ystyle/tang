@@ -33,11 +33,11 @@ public class Index {
     Index(let table:Array<UInt8>, let minChar:Char, let maxChar:Char) {}
 }
 
-func join(ss:Collection<String>, withSlash:Bool):String {
+func join(ss:Array<String>, withSlash:Bool):String {
     if (ss.size() == 0) {
         return ""
     }
-    let s = String.join(Array<String>(ss), delimiter: "/")
+    let s = String.join(ss, delimiter: "/")
     if (withSlash) {
         return s + "/"
     }
