@@ -1,7 +1,7 @@
-package echo
+package tang
 
 from std import collection.*
-from std import net.*
+from net import http.*
 
 
 public class Node {
@@ -10,9 +10,9 @@ public class Node {
     var params = HashMap<String, Int64>()
     var handleMap = HandleMap()
     var parent = Node()
-    var colon = Node()
+    var colon:?Node = None
     var isWC = false
-    var nodes = Buffer<Node>()
+    var nodes = ArrayList<Node>()
     var index:?Index = None
     init() {
         
@@ -21,11 +21,48 @@ public class Node {
         this.route = route
         this.part = part
     }
+    init(part:String) {
+        this.part = part
+    }
     func addRoute(route:String):Node {
         if (route == "/") {
             return this
         }
+        let (parts, l_params) = splitRoute(route)
+        var currNode = this
+        for (p in parts) {
+            currNode = currNode.addPart(p)
+        }
+        currNode.route = route
+        currNode.params = l_params ?? HashMap<String, Int64>()
+        this.indexNodes()
+        return currNode
+    }
+    public func addPart(part:String):Node {
+        if (part == "*") {
+            this.isWC = true
+            return this
+        }
+        if (part == ":") {
+            if (let None = this.colon) {
+                this.colon = Node(":")
+            }
+            return this.colon.getOrThrow()
+        }
+        this.nodes.forEachWithIndex({childNodeIndex, childNode => 
+            if (childNode.part[0] != part[0]) {
+                return
+            }
+            // check for a common prefix
+           let list = part.toArray()
+        list. 
+            ( )
+        })
+        // todo
         return this
+    }
+    public func indexNodes() {
+
     }
 }
 
@@ -44,23 +81,21 @@ func join(ss:Array<String>, withSlash:Bool):String {
     return s
 }
 
-type splitRouteResultType = Buffer<String> * Option<HashMap<String, Int64>>
 
-func splitRoute(route:String):Result<splitRouteResultType> {
+func splitRoute(route:String):(ArrayList<String>, Option<HashMap<String, Int64>>) {
     if (route == "" || route[0] != '/') {
-        return Err(Exception("invalid route: ${route}"))
+        throw Exception("invalid route: ${route}")
     }
     if (route == "/") {
-        let a: splitRouteResultType = (Buffer<String>(), None)
-        return Ok(a)
+        return (ArrayList<String>(), None)
     }
     let l_route = route[1..]
     let ss = l_route.split('/')
     if (ss.size() == 0) {
-        return Err(Exception("invalid route: ${route}"))
+        throw Exception("invalid route: ${route}")
     }
     let p = RouteParser(ss)
-    var params = Buffer<String>()
+    var params = ArrayList<String>()
     while (p.valid()) {
         let segment = p.next()
         if (segment == "") {
@@ -71,50 +106,47 @@ func splitRoute(route:String):Result<splitRouteResultType> {
         match (firstChar) {
             case ':' => 
                 p.finalizePart(true)
-                p.parts.add(":")
-                params.add(segment[1..])
+                p.parts.append(":")
+                params.append(segment[1..])
             case '*' =>
                 p.finalizePart(true)
-                p.parts.add("*")
-                params.add(segment[1..])
+                p.parts.append("*")
+                params.append(segment[1..])
             case _ =>
                 p.accumulate(segment)
         }
     }
     p.finalizePart(false)
     if (params.size() > 0) {
-        return match (paramMap(route, params)) {
-            case Err(e) => Err(e)
-            case Ok(v) =>
-                Ok((p.parts, v))
-        }
+        let v = paramMap(route, params)
+        return (p.parts, v)        
     }
 
-    return Err(Exception("invalid route: ${route}"))
+    throw Exception("invalid route: ${route}")
 }
 
-func paramMap(route:String, params:Buffer<String>):Result<HashMap<String, Int64>> {
+func paramMap(route:String, params:ArrayList<String>):HashMap<String, Int64> {
     let m = HashMap<String, Int64>(params.size())
     var i = 0
     while (i < params.size()) {
         let param = params[i]
         if (param == "") {
-            return Err(Exception("param must have a name: " + route))
+            throw Exception("param must have a name: " + route)
         }
         m.put(param, i)
     }
-    return Ok(m)
+    return m
 }
 
 class RouteParser {
     let segments:Array<String>
     var i:Int64 = 0
-    var acc:Buffer<String>
-    var parts:Buffer<String>
+    var acc:ArrayList<String>
+    var parts:ArrayList<String>
     init(segments:Array<String>) {
         this.segments = segments
-        this.acc = Buffer<String>()
-        this.parts = Buffer<String>()
+        this.acc = ArrayList<String>()
+        this.parts = ArrayList<String>()
     }
     func valid():Bool {
         return this.i < this.segments.size()
@@ -125,18 +157,29 @@ class RouteParser {
         return s
     }
     func accumulate(s:String) {
-        this.acc.add(s)
+        this.acc.append(s)
     }
     func finalizePart(withSlash:Bool) {
         let part = join(this.acc, withSlash)
-        if (part != "") {
-            this.parts.add(part)
+        if (let Some(v) = part) {
+            this.parts.append(v)
         }
         this.acc.clear()
         if (this.valid()) {
-            this.acc.add("")
+            this.acc.append("")
         }
     }
+}
+
+func join (ss:Collection<String>, withSlash:Bool):?String {
+    if (ss.isEmpty()) {
+        return None
+    }
+    let s = String.join(ss.toArray(), delimiter:"/")
+    if (withSlash) {
+        return s + "/"
+    }
+    return s
 }
 
 public class HandleMap {

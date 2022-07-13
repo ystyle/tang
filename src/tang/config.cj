@@ -1,12 +1,14 @@
-package echo
+package tang
 
 
 public class Config {
-    var notFoundHandler:?HandlerFunc = None
-    var methodNotAllowedHandler:?HandlerFunc = None
+    var notFoundHandler:?HandlerFunc
+    var methodNotAllowedHandler:?HandlerFunc
     var group:Group
     init(group:Group) {
         this.group = group
+        this.notFoundHandler = None
+        this.methodNotAllowedHandler = None
     }
 }
 
@@ -29,7 +31,7 @@ public func WithGroup(fn:(Group)->Unit):GroupOptionFunc {
 public func WithMiddleware(fns:Array<MiddlewareFunc>):GroupOptionFunc {
     return {c => 
         for (fn in fns) {
-            c.group.stack.add(fn)
+            c.group.stack.append(fn)
         }
     }
 }
@@ -42,13 +44,10 @@ public func WithHandler(fn:HandlerFunc):GroupOptionFunc {
    return { c => 
         let md:MiddlewareFunc = {next => 
             return { w, r =>
-                match (fn(w, r)) {
-                    case Err(e) => return Err(e)
-                    case Ok(_) => ()
-                }
+                fn(w, r)
                 return next(w, r)
             }
         }
-        c.group.stack.add(md)
+        c.group.stack.append(md)
    }
 }

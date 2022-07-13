@@ -1,4 +1,4 @@
-package echo
+package tang
 
 from std import io.*
 

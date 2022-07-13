@@ -1,21 +1,20 @@
-package echo
+package tang
 
 from std import sync.*
-from std import net.*
+from net import http.*
 
 public class Router  {
     public var config:Config
     public var group:Group
     let tree:Node
-    let mu:Mutex = Mutex()
+    let mu:ReentrantMutex = ReentrantMutex()
 
     init() {
         this.tree = Node("/","/")
         this.group = Group()
         this.config = Config(this.group)
-        match (this.config.notFoundHandler) {
-            case None => this.config.notFoundHandler = this.group.wrap(noFoundHandler)
-            case _ => ()
+        if (let None = this.config.notFoundHandler) {
+            this.config.notFoundHandler = this.group.wrap(noFoundHandler)
         }
     }
     
@@ -36,8 +35,9 @@ public class Router  {
 
     }
 
-    public func lookup(w: ResponseWriteStream, r: Request):HandlerFunc * Params  {
-        
+    public func lookup(w: ResponseWriteStream, r: Request):(HandlerFunc, Params)  {
+        // todo
+        return ({w,r => }, Params("", this.tree, 1))
     }
 }
 
@@ -82,11 +82,11 @@ public class Params{
         var pathLen = this.path.size()
         var currNode = this.node
         var currParamIndex = this.node?.params?.size() ?? 0
-        
+        // todo
+        return None
     }
 }
 
-func noFoundHandler(w:ResponseWriteStream, req:Request): Result<Unit> {
+func noFoundHandler(w:ResponseWriteStream, req:Request) {
     notFound(w, req)
-    return Ok(())
 }
