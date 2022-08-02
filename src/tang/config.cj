@@ -1,14 +1,13 @@
 package tang
 
-
 public class Config {
-    var notFoundHandler:?HandlerFunc
-    var methodNotAllowedHandler:?HandlerFunc
+    var notFoundHandler:HandlerFunc
+    var methodNotAllowedHandler:HandlerFunc
     var group:Group
     init(group:Group) {
         this.group = group
-        this.notFoundHandler = None
-        this.methodNotAllowedHandler = None
+        this.notFoundHandler = defaultNoFoundHandler
+        this.methodNotAllowedHandler = defaultMethodNotAllowedHandler
     }
 }
 

@@ -2,16 +2,34 @@
   "resolves": [
     {
       "organization": "ystyle",
-      "name": "echo",
+      "name": "tang",
       "path": "./",
-      "packagePath": "/home/coder/project/cj-echo/src/tang",
-      "packageName": "echo/tang",
+      "packagePath": "/home/coder/project/tang/src/tang",
+      "packageName": "tang/tang",
       "version": "1.0.0",
-      "hash": "-2010659156134953703",
+      "hash": "-2010659084683281449",
       "isMacroPackage": false,
       "output_type": "static",
       "command_option": "",
       "requires": [],
+      "package_requires": {},
+      "foreign_requires": {},
+      "cross_compile_configuration": {}
+    },
+    {
+      "organization": "ystyle",
+      "name": "tang",
+      "path": "./",
+      "packagePath": "/home/coder/project/tang/src",
+      "packageName": "tang/default",
+      "version": "1.0.0",
+      "hash": "-2010659084683281449",
+      "isMacroPackage": false,
+      "output_type": "executable",
+      "command_option": "",
+      "requires": [
+        "tang/tang"
+      ],
       "package_requires": {},
       "foreign_requires": {},
       "cross_compile_configuration": {}

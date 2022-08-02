@@ -8,5 +8,5 @@
   "organization": "ystyle",
   "foreign_requires": {},
   "name": "tang",
-  "output_type": "static"
+  "output_type": "executable"
 }

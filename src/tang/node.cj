@@ -1,19 +1,17 @@
 package tang
 
 from std import collection.*
-from net import http.*
-
 
 public class Node {
     var route:String = ""
     var part:String = ""
     var params = HashMap<String, Int64>()
     var handleMap = HandleMap()
-    var parent = Node()
+    var parent:?Node = None
     var colon:?Node = None
     var isWC = false
     var nodes = ArrayList<Node>()
-    var index:?Index = None
+    var index:Index = Index([], ' ', ' ')
     init() {
         
     }
@@ -23,6 +21,10 @@ public class Node {
     }
     init(part:String) {
         this.part = part
+    }
+    init (part:String, nodes:ArrayList<Node>) {
+        this.part = part
+        this.nodes = nodes
     }
     func addRoute(route:String):Node {
         if (route == "/") {
@@ -49,25 +51,160 @@ public class Node {
             }
             return this.colon.getOrThrow()
         }
-        this.nodes.forEachWithIndex({childNodeIndex, childNode => 
+        for(childNodeIndex in 0..this.nodes.size()) {
+            let childNode = this.nodes[childNodeIndex]
             if (childNode.part[0] != part[0]) {
-                return
+                continue
             }
             // check for a common prefix
-           let list = part.toArray()
-        list. 
-            ( )
-        })
-        // todo
-        return this
+            for (i in 0..part.size()) {
+                if (i == childNode.part.size()) {
+                    break
+                }
+                let c = part[i]
+                if (c == childNode.part[i]) {
+                    continue
+                }
+                childNode.part = childNode.part[i..]
+                let newNode = Node(part[i..])
+                this.nodes[childNodeIndex] = Node(part[i..], ArrayList([childNode, newNode]))
+                return newNode
+            }
+            // Parts match completely.
+            if (part.size() > childNode.part.size()) {
+                let p = part[childNode.part.size()..]
+                return childNode.addPart(p)
+            } else if (part.size() < childNode.part.size()) {
+                childNode.part = childNode.part[part.size()..]
+                let newNode = Node(part, ArrayList([childNode]))
+                this.nodes[childNodeIndex] = newNode
+                return newNode
+            } else {
+                return childNode
+            }
+        }
+        let node = Node(part)
+        this.nodes.append(node)
+        return node
     }
-    public func indexNodes() {
 
+    func findRoute(meth:String, path:String):(?Node, ?HandlerFunc, UInt16) {
+        if (path.isEmpty()) {
+            return (None, None, 0)
+        }
+        let p = path[1..] // strip leading "/"
+        if (p.isEmpty()) {
+           return (this, this.handleMap.Get(meth), 0)
+        }
+        return this.l_findroute(meth, p)
+    }
+
+    func l_findroute(meth:String, path:String):(?Node, ?HandlerFunc, UInt16) {
+        // todo
+        var found:?Node = None
+        let firstChar = path[0]
+        if (firstChar >= this.index.minChar && firstChar <= this.index.maxChar) {
+            let i = this.index.table[Int64(UInt32(firstChar)-UInt32(this.index.minChar))]
+            if (i != 0) {
+                let childNode = this.nodes[Int64(i)-1]
+                if (childNode.part == path) {
+                    let handler = childNode.handleMap.Get(meth)
+                    if (let Some(fn) = handler) {
+                        return (childNode, fn, 0)
+                    }
+                    found = childNode
+                } else {
+                    let partLen = childNode.part.size()
+                    if (path.startsWith(childNode.part)) {
+                        let (node, handler, wildcardLen) = childNode.l_findroute(meth, path[partLen..])
+                        if (let Some(fn) = handler) {
+                            return (node, fn, wildcardLen)
+                        }
+                        if (let Some(n) = node ) {
+                            found = node
+                        }
+                    }
+                }
+            }
+        }
+
+        if (let Some(colon_) = this.colon) {
+            let i = path.indexOf('/') ?? -1
+            if (i > 0) {
+                let (node, handler, wildcardLen) = colon_.l_findroute(meth, path[i..])
+                if (let Some(fn) = handler) {
+                    return (node, fn, wildcardLen)
+                }
+            } else {
+                let handler = colon_.handleMap.Get(meth)
+                if (let Some(fn) = handler) {
+                    return (colon_, fn, 0)
+                }
+                if (let None = found) {
+                    found = colon_
+                }
+            }
+        }
+
+        if (this.isWC) {
+            let handler = this.handleMap.Get(meth)
+            if (let Some(fn) = handler) {
+                    return (this, fn, UInt16(path.size()))
+            }
+            if (let None = found) {
+                found = this
+            }
+        }
+        return (found, None, 0)
+    }
+
+    public func indexNodes():Unit {
+        if (this.nodes.size() > 0) {
+            this.nodes.sortBy({n1, n2 =>
+                if (n1.part[0] < n2.part[0]) {
+                    return Ordering.LT
+                } else if (n1.part[0] > n2.part[0]) {
+                    return Ordering.GT
+                }
+                return Ordering.EQ
+            })
+            this.index.minChar = this.nodes[0].part[0]
+            this.index.maxChar = this.nodes[this.nodes.size()-1].part[0]
+            let size = Int64(UInt32(this.index.maxChar) - UInt32(this.index.minChar)) + 1
+            if (this.index.table.size() != size) {
+                this.index.table = Array(size, item: 0)
+            } else {
+                for (i in 0..this.index.table.size()) {
+                    this.index.table[i] = 0
+                }
+            }
+            // Index nodes by the first char in a part.
+            for (childNodeIndex in 0..this.nodes.size()) {
+                let childNode = this.nodes[childNodeIndex]
+                childNode.parent = this
+                childNode.indexNodes()
+                let firstChar = UInt32(childNode.part[0]) - UInt32(this.index.minChar)
+                this.index.table[Int64(firstChar)] = UInt8(childNodeIndex + 1)
+            }
+
+        }
+        if (let Some(c) = this.colon) {
+            c.parent = this
+            c.indexNodes()
+        }
+        ()
+    }
+
+    func setHandler(verb:String, handler:HandlerFunc) {
+        if (let Some(_) = this.handleMap.Get(verb) ){
+            throw Exception("${this.route} already handles ${verb}")
+        }
+        this.handleMap.Set(verb, handler)
     }
 }
 
 public class Index {
-    Index(let table:Array<UInt8>, let minChar:Char, let maxChar:Char) {}
+    Index(var table:Array<UInt8>, var minChar:Char, var maxChar:Char) {}
 }
 
 func join(ss:Array<String>, withSlash:Bool):String {
@@ -121,8 +258,7 @@ func splitRoute(route:String):(ArrayList<String>, Option<HashMap<String, Int64>>
         let v = paramMap(route, params)
         return (p.parts, v)        
     }
-
-    throw Exception("invalid route: ${route}")
+    return (p.parts, None)
 }
 
 func paramMap(route:String, params:ArrayList<String>):HashMap<String, Int64> {
@@ -134,6 +270,7 @@ func paramMap(route:String, params:ArrayList<String>):HashMap<String, Int64> {
             throw Exception("param must have a name: " + route)
         }
         m.put(param, i)
+        i ++
     }
     return m
 }
@@ -218,7 +355,7 @@ public class HandleMap {
             case "OPTIONS" => this.options = handler
             case "PATCH" => this.patch = handler
             case "NOTALLOWED" => this.notAllowed = handler
-            case _ => ()
+            case _ => throw Exception("unknown HTTP method: ${meth}")
         }
     }
 }

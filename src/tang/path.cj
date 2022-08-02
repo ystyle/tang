@@ -7,16 +7,13 @@ public func CleanPath(p:String):String {
     if (p == "") {
         return "/"
     }
-    var buff = StringStream("")
+    var buff = StringBuilder()
     let n = p.size()
     var r = 1
     var w = 1
     if (p[0] != '/') {
         r = 0
-        if (n + 1 > stackBufSize) {
-            buff.ensureCapacity(n + 1)
-        }
-        buff.appends('/')
+        buff.append('/')
     }
     var trailing = n > 1 && p[n-1] == '/'
     while (r < n) {
@@ -31,59 +28,49 @@ public func CleanPath(p:String):String {
             r += 3
             if (w > 1) {
                 w--
-                if (buff.length() == 0) {
+                if (buff.size() == 0) {
                     while (w > 1 && p[w] != '/') {
                         w--
                     }
                 } else {
-                    while (w > 1 && buff.getChars()[w] != '/') {
+                    while (w > 1 && buff.get(w) != '/') {
                         w--
                     }
                 }
             }
         } else {
             if (w > 1) {
-               buff = bufApp(buff, p, w, '/')
+               bufApp(buff, p, w, '/')
                 w++
             }
             while (r < n && p[r] != '/') {
-                buff = bufApp(buff, p, w, p[r])
+                bufApp(buff, p, w, p[r])
                 w++
                 r++
             }
         }
     }
     if (trailing && w > 1) {
-        buff = bufApp(buff, p, w, '/')
+        bufApp(buff, p, w, '/')
         w++
     }
-    if (buff.length() == 0) {
+    if (buff.size() == 0) {
         return p[..w]
     }
-    return buff.subString(0, w)
+    return buff.toString()[0..w]
 }
 
-func bufApp(buf:StringStream, s:String, w:Int64, c:Char):StringStream{
-    var b = StringStream(buf.toString())
-    if (buf.length() == 0) {
+func bufApp(buf:StringBuilder, s:String, w:Int64, c:Char):Unit{
+    if (buf.size() == 0) {
         if (s[w] == c) {
-            return buf
+            return
         }
-        let l = s.size()
-        if (l > buf.capacity()) {
-            b.ensureCapacity(l)
-        } else {
-            b = StringStream("")
-            b.ensureCapacity(l)
-        }
-        b.appends(s[..w])
+        buf.append(s[..w])
     }
-    
-    if (b.length() > w) {
-        b.setCharAt(w, c)
+    if (buf.size() > w) {
+        buf.remove(w)
+        buf.insert(w, c)
     } else {
-        b.appends(c)
-        ()
+        buf.append(c)
     }
-    return b
 }
