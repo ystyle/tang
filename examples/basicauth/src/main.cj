@@ -3,9 +3,7 @@ from tang import middleware.{LogMiddleware, NewBasicAuthMiddleware, WithBasicAut
 from net import http.Server, http.ResponseWriteStream, http.BasicAuth
 
 func debugHandle(w:ResponseWriteStream, r:Request) {
-    w.writeStatusCode(200)
-    w.write("hello world".toUtf8Array())
-    ()
+    PlainString(w, "hello world!")
 }
 
 func authUser (r:Request):Bool {
@@ -27,9 +25,7 @@ main() {
     ])
     r.group.withGroup("/api", {group =>
         group.get("/user/current", {w, r => 
-            w.writeStatusCode(200)
-            println(w.header().getKeysToString())
-            w.write("current user: haha\n".toUtf8Array())
+            PlainString(w, "hello world!")
         })
     })
 

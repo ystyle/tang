@@ -33,9 +33,7 @@ main() {
         group.get("/user/:id", debugHandle)
         // 静态路径
         group.get("/user/current", {w, r => 
-            w.writeStatusCode(200)
-            println(w.header().getKeysToString())
-            w.write("current user: haha\n".toUtf8Array())
+            PlainString(w, "current user: haha")
         })
         // 通配符路径
         group.get("/user/*path", debugHandle)
