@@ -1,7 +1,9 @@
 package tang
 from std import collection.ArrayList
-from net import http.{ ResponseWriteStream, Request as HttpRequest, Handler as HttpHandler, FuncHandler }
+from net import http.{ ResponseWriteStream, Request as HttpRequest, Handler as HttpHandler, FuncHandler, HttpStatusCode }
 from std import convert.parseInt64
+from serialization import serialization.Serializable
+from encoding import json.*
 
 public type HandlerFunc = (ResponseWriteStream, Request) -> Unit
 
@@ -114,4 +116,13 @@ public class Params{
         }
         return list
     }
+}
+
+public func JSON<T>(w: ResponseWriteStream, value:T) where T <: Serializable<T>  {
+    JSONWithCode(w, HttpStatusCode.STATUS_OK, value)
+}
+
+public func JSONWithCode<T>(w: ResponseWriteStream, code:Int64, value:T) where T <: Serializable<T>  {
+    w.writeStatusCode(code)
+    w.write(value.serialize().toJson().toJsonString().toUtf8Array())
 }

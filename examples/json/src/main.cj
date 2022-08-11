@@ -18,21 +18,17 @@ main() {
     ])
     // 创建分组
     r.group.withGroup("/api", {group =>
-        // 命名路由
-        group.get("/user/:id", debugHandle)
         // 静态路由
         group.get("/user/current", {w, r => 
-            // w.writeStatusCode(200)
-            // println(w.header().getKeysToString())
-            // w.write("current user: haha\n".toUtf8Array())
             let m = HashMap<String, String>()
             m.put("1", "2")
             m.put("2", "2")
             m.put("2", "2")
+            // 可以返回实现了 Serializable 接口的类型
             JSON(w, m)
+            // 还有个可以返回 http status code的方法
+            // JSONWithCode(w, 201, m) 
         })
-        // 通配符路由
-        group.get("/user/*path", debugHandle)
     })
 
     r.group.get("/hello", debugHandle)
