@@ -73,7 +73,7 @@ public class Group {
     func wrap(handler:HandlerFunc):HandlerFunc {
         var wrapHandle = handler
         for (st in this.stack) {
-            wrapHandle = st(handler)
+            wrapHandle = st(wrapHandle)
         }
         return wrapHandle
     }

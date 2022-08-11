@@ -21,8 +21,8 @@ func authUser (r:Request):Bool {
 main() {
     let r = Router([
         Use([
-            LogMiddleware,
-            NewBasicAuthMiddleware(authUser, [WithBasicAuthRealm("test:test")])
+            NewBasicAuthMiddleware(authUser, [WithBasicAuthRealm("test:test")]),
+            LogMiddleware
         ])
     ])
     r.group.withGroup("/api", {group =>
