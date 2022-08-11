@@ -1,6 +1,6 @@
 package tang
 
-from std import io.*
+from std import collection.StringBuilder
 
 public func CleanPath(p:String):String {
     let stackBufSize = 128

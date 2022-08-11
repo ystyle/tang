@@ -1,6 +1,6 @@
 package tang
 
-from std import collection.*
+from std import collection.{ HashMap, ArrayList, StringBuilder }
 
 public class Node {
     var route:String = ""
@@ -100,7 +100,6 @@ public class Node {
     }
 
     func l_findroute(meth:String, path:String):(?Node, ?HandlerFunc, UInt16) {
-        // todo
         var found:?Node = None
         let firstChar = path[0]
         if (firstChar >= this.index.minChar && firstChar <= this.index.maxChar) {

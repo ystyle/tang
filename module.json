@@ -2,11 +2,11 @@
   "requires": {},
   "command_option": "",
   "PackageRequires": {},
-  "cjc_version": "0.30.4",
+  "cjc_version": "0.31.4",
   "description": "nothing here",
   "version": "1.0.0",
   "organization": "ystyle",
   "foreign_requires": {},
   "name": "tang",
-  "output_type": "executable"
+  "output_type": "static"
 }

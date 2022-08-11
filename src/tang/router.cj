@@ -1,7 +1,7 @@
 package tang
 
 from std import sync.ReentrantMutex
-from net import http.notFound as HttpNotFound,  http.Request as HttpRequest, http.ResponseWriteStream,http.redirect, http.Handler
+from net import http.{ notFound as HttpNotFound, Request as HttpRequest, ResponseWriteStream, redirect, Handler }
 from net import http.HttpStatusCode
 from encoding import url.URL
 
@@ -41,7 +41,6 @@ public class Router <: Handler {
         if (path == "") {
             path = req.url.path
         }
-        println("method: ${req.method.toString()} path:  ${path}")
         let (node, handler, wildcardLen) = this.tree.findRoute(req.method.toString(), path)
         
         if (let None = node) {

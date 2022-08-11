@@ -1,11 +1,11 @@
 package tang
 from std import collection.ArrayList
-from net import http.ResponseWriteStream, http.Request as HttpRequest, http.Handler as HttpHandler, http.FuncHandler
+from net import http.{ ResponseWriteStream, Request as HttpRequest, Handler as HttpHandler, FuncHandler }
 from std import convert.parseInt64
 
-type HandlerFunc = (ResponseWriteStream, Request) -> Unit
+public type HandlerFunc = (ResponseWriteStream, Request) -> Unit
 
-type MiddlewareFunc = (HandlerFunc) -> HandlerFunc
+public type MiddlewareFunc = (HandlerFunc) -> HandlerFunc
 
 public func HTTPHandler(handler:HttpHandler):HandlerFunc {
     return HTTPHandlerFunc(handler)
@@ -19,11 +19,10 @@ public func HTTPHandlerFunc(handle:HttpHandler):HandlerFunc  {
 }
 
 public class Request {
-    var request:HttpRequest
-    var params:Params
+    public var request:HttpRequest
+    public var params:Params
     public init(req:HttpRequest) {
         this.request = req
-        // todo
         this.params = Params("/", Node(), UInt16(0))
     }
     public init(req:HttpRequest, params:Params) {
