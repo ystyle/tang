@@ -22,14 +22,9 @@ main() {
         group.get("/user/:id", debugHandle)
         // 静态路由
         group.get("/user/current", {w, r => 
-            // w.writeStatusCode(200)
-            // println(w.header().getKeysToString())
-            // w.write("current user: haha\n".toUtf8Array())
-            let m = HashMap<String, String>()
-            m.put("1", "2")
-            m.put("2", "2")
-            m.put("2", "2")
-            JSON(w, m)
+            w.writeStatusCode(200)
+            println(w.header().getKeysToString())
+            w.write("current user: haha\n".toUtf8Array())
         })
         // 通配符路由
         group.get("/user/*path", debugHandle)

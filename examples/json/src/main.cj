@@ -21,13 +21,13 @@ main() {
         // 静态路由
         group.get("/user/current", {w, r => 
             let m = HashMap<String, String>()
-            m.put("1", "2")
+            m.put("1", "1")
             m.put("2", "2")
-            m.put("2", "2")
+            m.put("3", "3")
             // 可以返回实现了 Serializable 接口的类型
-            JSON(w, m)
+            tang.JSON(w, m)
             // 还有个可以返回 http status code的方法
-            // JSONWithCode(w, 201, m) 
+            // tang.JSONWithCode(w, 201, m)
         })
     })
 

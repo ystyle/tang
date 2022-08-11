@@ -126,3 +126,12 @@ public func JSONWithCode<T>(w: ResponseWriteStream, code:Int64, value:T) where T
     w.writeStatusCode(code)
     w.write(value.serialize().toJson().toJsonString().toUtf8Array())
 }
+
+public func PlainString(w: ResponseWriteStream, value:String)   {
+    JSONWithCode(w, HttpStatusCode.STATUS_OK, value)
+}
+
+public func PlainStringWithCode(w: ResponseWriteStream, code:Int64, value:String)  {
+    w.writeStatusCode(code)
+    w.write(value.toUtf8Array())
+}

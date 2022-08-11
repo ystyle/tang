@@ -4,3 +4,7 @@
 
 - `public func JSON<T>(w: ResponseWriteStream, value:T) where T <: Serializable<T>`
 - `public func JSON<T>(w: ResponseWriteStream, code:Int64, value:T) where T <: Serializable<T>`
+
+另外也可以使用 `PlainString` 和 `PlainStringWithCode` 返回String数据
+- `func PlainString(w: ResponseWriteStream, value:String)`
+- `func PlainStringWithCode(w: ResponseWriteStream, code:Int64, value:String)`
