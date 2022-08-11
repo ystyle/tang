@@ -57,3 +57,4 @@ main() {
 
 ### 中间件
 - [log](/src/middleware): 日志打印
+- [basic auth](/src/middleware): basic auth认证
