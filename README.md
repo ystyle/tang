@@ -1,5 +1,5 @@
 ### tang
->一个轻量级的web框架， 移植自[uptrace/bunrouter](https://github.com/uptrace/bunrouter)， 状态： 开发中
+>一个轻量级的web框架， 移植自[uptrace/bunrouter](https://github.com/uptrace/bunrouter)， 状态： 开发中[示例已经可使用]
 
 ### 功能
 - 中间件[middleware]： 可以把常见操作从 HTTP handler提取到可重用函数中
