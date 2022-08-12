@@ -2,7 +2,7 @@ package tang
 from std import collection.ArrayList
 from net import http.{ ResponseWriteStream, Request as HttpRequest, Handler as HttpHandler, FuncHandler, HttpStatusCode }
 from std import convert.parseInt64
-from serialization import serialization.Serializable
+from serialization import serialization.*
 from encoding import json.*
 
 public type HandlerFunc = (ResponseWriteStream, Request) -> Unit
@@ -36,6 +36,14 @@ public class Request {
     }
     public func route():String {
         return this.params.route()
+    }
+    public func bindJSON<T>():?T where T <: Serializable<T>  {
+        var bs = Array<UInt8>(this.request.body.size(), item:0)
+        this.request.body.read(bs)
+        let body = String.fromUtf8(bs)
+        var jv: JsonValue = JsonValue.fromStr(body)
+        let dm = DataModel.fromJson(jv)
+        return T.deserialize(dm)
     }
 }
 

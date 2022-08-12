@@ -1,0 +1,19 @@
+{
+  "cjc_version": "0.31.4",
+  "organization": "ystyle",
+  "name": "todo",
+  "description": "nothing here",
+  "version": "1.0.0",
+  "requires": {
+    "tang": {
+      "organization": "ystyle",
+      "version": "1.0.0",
+      "path": "../../"
+    }
+  },
+  "package_requires": {},
+  "foreign_requires": {},
+  "output_type": "executable",
+  "command_option": "",
+  "cross_compile_configuration": {}
+}

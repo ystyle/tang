@@ -1,5 +1,5 @@
 package middleware
-import tang.PlainString
+import tang.PlainStringWithCode
 
 public func ExceptionMiddleware (handler: HandlerFunc): HandlerFunc {
     return {w, r =>
@@ -7,7 +7,7 @@ public func ExceptionMiddleware (handler: HandlerFunc): HandlerFunc {
             handler(w, r)
        } catch (e:Throwable) {
            e.printStackTrace()
-           PlainString(w, "Error 500: Internal Server Error\n")
+           PlainStringWithCode(w, 500, "Error 500: Internal Server Error\n")
        }
     }
 }

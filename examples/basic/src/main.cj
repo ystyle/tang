@@ -8,7 +8,6 @@ func debugHandle(w:ResponseWriteStream, r:Request) {
 }
 
 main() {
-    let e:Exception
     // 创建路由
     let r = Router([
         Use([
@@ -19,7 +18,9 @@ main() {
     // 创建分组
     r.group.withGroup("/api", {group =>
         // 命名路由
-        group.get("/user/:id", debugHandle)
+        group.get("/user/:id", {w, r => 
+            PlainString(w, r.request.requestURI)
+        })
         // 静态路由
         group.get("/user/current", {w, r => 
             PlainString(w, "current user: haha")
