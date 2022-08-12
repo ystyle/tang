@@ -54,5 +54,6 @@ main() {
 更多示例请查看 [examples](/examples/) 目录
 
 ### 中间件
-- [log](/src/middleware): 日志打印
-- [basic auth](/src/middleware): basic auth认证
+- [log](/src/middleware/log.cj): 日志打印
+- [basic auth](/src/middleware/basic_auth.cj): basic auth认证
+- [exception](/src/middleware/exception.cj): 异常恢复，错误日志打印，并返回500错误

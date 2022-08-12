@@ -1,5 +1,5 @@
 from tang import tang.*
-from tang import middleware.LogMiddleware
+from tang import middleware.{LogMiddleware, ExceptionMiddleware}
 from net import http.Server, http.ResponseWriteStream
 from std import collection.HashMap
 
@@ -8,10 +8,12 @@ func debugHandle(w:ResponseWriteStream, r:Request) {
 }
 
 main() {
+    let e:Exception
     // 创建路由
     let r = Router([
         Use([
-            LogMiddleware
+            ExceptionMiddleware, // 放第一位，保证其它中间件也能正常执行
+            LogMiddleware // 访问日志记录
         ])
     ])
     // 创建分组
@@ -21,6 +23,9 @@ main() {
         // 静态路由
         group.get("/user/current", {w, r => 
             PlainString(w, "current user: haha")
+        })
+        group.get("/user/exception", {w,r=>
+            throw Exception("出现异常啦！")
         })
         // 通配符路由
         group.get("/user/*path", debugHandle)
