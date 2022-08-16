@@ -6,10 +6,7 @@ from tang import tang.*
 from tang import middleware.{LogMiddleware, ExceptionMiddleware}
 
 func getOneTodo(w:ResponseWriteStream, r:Request) {
-    let url = r.request.requestURI
-    let split:Array<String> = url.split("/")
-    let idstr = split[split.size()-1]
-    let id = parseInt64(idstr)
+    let id = r.params.int64("id") ?? -1
     for (todo in todoList) {
         if (id == todo.id) {
             JSON(w, todo)
@@ -46,15 +43,10 @@ func updateTodo(w:ResponseWriteStream, r:Request) {
 }
 
 func deleteTodo(w:ResponseWriteStream, r:Request) {
-    let url = r.request.requestURI
-    let split:Array<String> = url.split("/")
-    let idstr = split[split.size()-1]
-    let idoption = parseInt64(idstr)
-    if (let Some(id) = idoption) {
-        todoList.removeIf({todo => 
+    let id = r.params.int64("id") ?? -1
+     todoList.removeIf({todo => 
             return todo.id == id
-        })
-    }
+    })
     JSON(w, HashMap<String,String>([("msg", "ok")]))
 }
 main() {

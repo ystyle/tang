@@ -1,5 +1,5 @@
 package tang
-from std import collection.ArrayList
+from std import collection.{ArrayList, HashMap}
 from net import http.{ ResponseWriteStream, Request as HttpRequest, Handler as HttpHandler, FuncHandler, HttpStatusCode }
 from std import convert.parseInt64
 from serialization import serialization.*
@@ -35,7 +35,7 @@ public class Request {
         return this.params.byName(key)
     }
     public func route():String {
-        return this.params.route()
+        return this.params.route() ?? "/"
     }
     public func bindJSON<T>():?T where T <: Serializable<T>  {
         var bs = Array<UInt8>(this.request.body.size(), item:0)
@@ -73,45 +73,95 @@ public class Params{
         }
     }
 
-    public func route():String {
+    public func route():?String {
       match (this.node) {
-          case None => ""
+          case None => None
           case Some(n) => n.route
       }
     }
 
-    public func get(name:String):String {
+    public func get(name:String):?String {
         match (this.node) {
-            case None => ""
+            case None => None
             case Some(n) => 
                 if (n.params.contains(name)) {
                     let i = n.params[name]
-                    this.findParam(i) ?? ""
+                    this.findParam(i)
                 } else {
-                    ""
+                    None
                 }
         }
     }
 
     public func byName (name:String):String {
-        return this.get(name)
+        return this.get(name) ?? ""
     }
 
-    public func int64(name:String):Int64 {
-        let i = this.byName(name)
-        return parseInt64(i) ?? 0
+    public func int64(name:String):?Int64 {
+        let i = this.get(name)
+        if (let Some(v) = i) {
+            return parseInt64(v)
+        }
+        return None
     }
 
-    func findParam(parmIndex:Int64):?String {
+    func findParam(paramIndex:Int64):?String {
         var path = this.path
         var pathLen = this.path.size()
         var currNode = this.node
         var params = this.node?.params
-        var currParamIndex = params?.size() ?? 0
-        // todo
-        return ""
+        var currParamIndex = (params?.size() ?? 0) -1 
+        if (let Some(n) = this.node) {
+            if (currParamIndex == paramIndex) {
+                pathLen -= Int64(this.wildcardLen)
+                return path[pathLen..]
+            }
+            currParamIndex --
+            pathLen -= Int64(this.wildcardLen)
+            path = path[..pathLen]
+        }
+
+        while (true) {
+             match (currNode) {
+                case None  => break
+                case Some(n) =>
+                if (n.part[0] != ':') {
+                    pathLen -= n.part.size()
+                    path = path[..pathLen]
+                    currNode = n.parent
+                    continue
+                }
+                let i = path.lastIndexOf('/')
+                if (let Some(v) = i) {
+                    pathLen = v + 1
+                } else {
+                    return None
+                }
+                
+                if (currParamIndex == paramIndex) {
+                    println(path)
+                    return path[pathLen..]
+                }
+                currParamIndex--
+                path = path[..pathLen]
+                currNode = n.parent
+             }
+        }
+        return None
     }
 
+    public func map():HashMap<String,String> {
+        let m = HashMap<String,String>()
+        if (let Some(n) = this.node) {
+            for ((param, v) in n.params) {
+                let value = this.findParam(v)
+                if(let Some(vl) = value) {
+                    m[param] = vl
+                }
+            }
+        }
+        return m
+    }
     public func slice():Array<?Param> {
         var list = Array<?Param>()
         if (let Some(n) = this.node) {
