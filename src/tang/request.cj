@@ -4,6 +4,7 @@ from net import http.{ ResponseWriteStream, Request as HttpRequest, Handler as H
 from std import convert.parseInt64
 from serialization import serialization.*
 from encoding import json.*
+from std import convert.*
 
 public type HandlerFunc = (ResponseWriteStream, Request) -> Unit
 
@@ -44,6 +45,45 @@ public class Request {
         var jv: JsonValue = JsonValue.fromStr(body)
         let dm = DataModel.fromJson(jv)
         return T.deserialize(dm)
+    }
+    public func bindQuery<T>(value:T):?T where T <: Serializable<T> {
+        let dm =value.serialize()
+        var dms = match (dm) {
+            case data: DataModelStruct => data
+            case _ => throw Exception("this data is not DataModelStruct")
+        }
+        let result = DataModelStruct()
+        let fields = dms.getFields()
+        let query = this.request.url.query()
+        for (f in fields) {
+            let name = f.getName()
+            if (let Some(raw) = query.get(name)) {
+                let j = f.getData().toJson()
+                match(j.kind()) {
+                    case JsonKind.JsInt =>
+                        if (let Some(v) = parseInt64(raw)) {
+                            result.add(field<Int64>(name, v))
+                        }
+                        ()
+                    case JsString =>
+                        result.add(field<String>(name, raw))
+                        ()
+                    case JsFloat => 
+                        if (let Some(v) = parseFloat64(raw)) {
+                            result.add(field<Float64>(name, v))
+                        }
+                    case JsBool => 
+                        if (let Some(v) = parseBool(raw)) {
+                            result.add(field<Bool>(name, v))
+                        }
+                    case JsArray => println("unsuport field type: ${name}")
+                    case JsObject => println("unsuport field type: ${name}")
+                    case _ => println("unknow field type")
+                }
+            }
+            
+        }
+        return T.deserialize(result)
     }
 }
 
@@ -185,11 +225,11 @@ public func JSONWithCode<T>(w: ResponseWriteStream, code:Int64, value:T) where T
     w.write(value.serialize().toJson().toJsonString().toUtf8Array())
 }
 
-public func PlainString(w: ResponseWriteStream, value:String)   {
+public func PlainString<T>(w: ResponseWriteStream, value:T) where T <: ToString   {
     PlainStringWithCode(w, HttpStatusCode.STATUS_OK, value)
 }
 
-public func PlainStringWithCode(w: ResponseWriteStream, code:Int64, value:String)  {
+public func PlainStringWithCode<T>(w: ResponseWriteStream, code:Int64, value:T) where T <: ToString {
     w.writeStatusCode(code)
-    w.write(value.toUtf8Array())
+    w.write(value.toString().toUtf8Array())
 }
