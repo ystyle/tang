@@ -5,6 +5,10 @@
 - 中间件[middleware]： 可以把常见操作从 HTTP handler提取到可重用函数中
 - 支持路由优先级： 静态路径 > 命名路径 > 通配符路径
 - 支持路由分组
+- 支持使用class返回json
+- 支持绑定query参数到class
+- 支持绑定json body到class
+- 支持获取路径命名参数和通配符路径参数
 
 
 ### 示例
