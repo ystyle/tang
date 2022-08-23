@@ -16,12 +16,10 @@
 from tang import tang.*
 from tang import middleware.LogMiddleware
 from net import http.Server, http.ResponseWriteStream
-from std import time.Duration
+from std import collection.HashMap
 
 func debugHandle(w:ResponseWriteStream, r:Request) {
-    w.writeStatusCode(200)
-    w.write("hello world".toUtf8Array())
-    ()
+   PlainString(w, "hello world!")
 }
 
 main() {
@@ -34,10 +32,17 @@ main() {
     // 创建路由分组
     r.group.withGroup("/api", {group =>
         // 命名路径 
-        group.get("/user/:id", debugHandle)
+        group.get("/user/:id", {w,r => 
+            let id = r.params.get("id") ?? "None" // 获取路径参数
+            println("id: ${id}")
+            PlainString(w, id) // 可以返回实现了ToString接口的类型
+        })
         // 静态路径
-        group.get("/user/current", {w, r => 
-            PlainString(w, "current user: haha")
+        group.get("/user/current", {w, r =>
+            let m = HashMap<String, String>()
+            m.put("id", "1")
+            m.put("name", "糖")
+            JSON(w, m) // 可以返回实现了 Serializable 接口的类型
         })
         // 通配符路径
         group.get("/user/*path", debugHandle)
