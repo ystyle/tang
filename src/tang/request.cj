@@ -46,7 +46,11 @@ public class Request {
         let dm = DataModel.fromJson(jv)
         return T.deserialize(dm)
     }
-    public func bindQuery<T>(value:T):?T where T <: Serializable<T> {
+    public func bindQuery<T>(value:Box<T>) where T <: Serializable<T> {
+        let v:T = value.value
+        value.value = this.bindQuery(v)
+    }
+    public func bindQuery<T>(value:T):T where T <: Serializable<T> {
         let dm =value.serialize()
         var dms = match (dm) {
             case data: DataModelStruct => data
@@ -58,30 +62,30 @@ public class Request {
         for (f in fields) {
             let name = f.getName()
             if (let Some(raw) = query.get(name)) {
-                let j = f.getData().toJson()
-                match(j.kind()) {
-                    case JsonKind.JsInt =>
+                let data = f.getData()
+                match(data) {
+                    case val:DataModelInt =>
                         if (let Some(v) = parseInt64(raw)) {
                             result.add(field<Int64>(name, v))
                         }
                         ()
-                    case JsString =>
+                    case val:DataModelString =>
                         result.add(field<String>(name, raw))
                         ()
-                    case JsFloat => 
+                    case val:DataModelFloat =>
                         if (let Some(v) = parseFloat64(raw)) {
                             result.add(field<Float64>(name, v))
                         }
-                    case JsBool => 
+                    case val:DataModelBool => 
                         if (let Some(v) = parseBool(raw)) {
                             result.add(field<Bool>(name, v))
                         }
-                    case JsArray => println("unsuport field type: ${name}")
-                    case JsObject => println("unsuport field type: ${name}")
-                    case _ => println("unknow field type")
+                    case val:DataModelSeq => println("[tang] unsuport field type: Array => ${name}")
+                    case val:DataModelStruct => println("[tang] unsuport field type: Object => ${name}")
+                    case val:DataModelNull => println("[tang] unsuport field type: Option => ${name}")
+                    case _ => println("[tang] unknow field type")
                 }
             }
-            
         }
         return T.deserialize(result)
     }

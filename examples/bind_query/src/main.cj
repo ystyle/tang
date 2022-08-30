@@ -2,14 +2,12 @@ from tang import tang.*
 from tang import middleware.{LogMiddleware, ExceptionMiddleware}
 from net import http.Server, http.ResponseWriteStream
 from serialization import serialization.*
+from std import collection.HashMap
 
 class User <: Serializable<User>  {
-    let id:Int64
-    var name:String
-    init(id:Int64, name:String) {
-        this.id = id
-        this.name = name
-    }
+    
+    User(var id!:Int64 = 0, var name!:String = "") {}
+
     public func serialize(): DataModel {
         return DataModelStruct().add(field<Int64>("id", this.id)).add(field<String>("name", this.name))
     }
@@ -18,9 +16,9 @@ class User <: Serializable<User>  {
             case data: DataModelStruct => data
             case _ => throw Exception("this data is not DataModelStruct")
         }
-        let name = String.deserialize(dms.get("name"))
-        let id = Int64.deserialize(dms.get("id"))
-        return User(id,name)
+        let l_id = Int64.deserialize(dms.get("id"))
+        let l_name = String.deserialize(dms.get("name"))
+        return User(id: l_id, name: l_name)
     }
 }
 
@@ -35,8 +33,13 @@ main() {
     // 创建分组
     r.group.withGroup("/api", {group =>
         // 绑定query参数
-        group.get("/user", {w, r => 
-            let query = r.bindQuery(User(0, ""))
+        group.get("/user", {w, r =>
+            var query = Box<User>(User())
+            r.bindQuery(query)
+            JSON(w, query.value)
+        })
+        group.get("/user/current", {w, r =>
+            let query = r.bindQuery(User())
             JSON(w, query)
         })
     })
