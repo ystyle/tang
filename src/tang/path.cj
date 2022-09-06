@@ -8,7 +8,7 @@ public func CleanPath(p:String):String {
         return "/"
     }
     var buff = StringBuilder()
-    let n = p.size()
+    let n = p.size
     var r = 1
     var w = 1
     if (p[0] != '/') {
@@ -28,7 +28,7 @@ public func CleanPath(p:String):String {
             r += 3
             if (w > 1) {
                 w--
-                if (buff.size() == 0) {
+                if (buff.size == 0) {
                     while (w > 1 && p[w] != '/') {
                         w--
                     }
@@ -54,20 +54,20 @@ public func CleanPath(p:String):String {
         bufApp(buff, p, w, '/')
         w++
     }
-    if (buff.size() == 0) {
+    if (buff.size == 0) {
         return p[..w]
     }
     return buff.toString()[0..w]
 }
 
 func bufApp(buf:StringBuilder, s:String, w:Int64, c:Char):Unit{
-    if (buf.size() == 0) {
+    if (buf.size == 0) {
         if (s[w] == c) {
             return
         }
         buf.append(s[..w])
     }
-    if (buf.size() > w) {
+    if (buf.size > w) {
         buf.remove(w)
         buf.insert(w, c)
     } else {

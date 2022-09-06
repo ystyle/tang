@@ -39,7 +39,7 @@ public class Request {
         return this.params.route() ?? "/"
     }
     public func bindJSON<T>():?T where T <: Serializable<T>  {
-        var bs = Array<UInt8>(this.request.body.size(), item:0)
+        var bs = Array<UInt8>(this.request.body.length, item:0)
         this.request.body.read(bs)
         let body = String.fromUtf8(bs)
         var jv: JsonValue = JsonValue.fromStr(body)
@@ -151,10 +151,10 @@ public class Params{
 
     func findParam(paramIndex:Int64):?String {
         var path = this.path
-        var pathLen = this.path.size()
+        var pathLen = this.path.size
         var currNode = this.node
         var params = this.node?.params
-        var currParamIndex = (params?.size() ?? 0) -1 
+        var currParamIndex = (params?.size ?? 0) -1 
         if (let Some(n) = this.node) {
             if (currParamIndex == paramIndex) {
                 pathLen -= Int64(this.wildcardLen)
@@ -170,7 +170,7 @@ public class Params{
                 case None  => break
                 case Some(n) =>
                 if (n.part[0] != ':') {
-                    pathLen -= n.part.size()
+                    pathLen -= n.part.size
                     path = path[..pathLen]
                     currNode = n.parent
                     continue
@@ -209,7 +209,7 @@ public class Params{
     public func slice():Array<?Param> {
         var list = Array<?Param>()
         if (let Some(n) = this.node) {
-            list = Array<?Param>(n.params.size(), item: None)
+            list = Array<?Param>(n.params.size, item: None)
             for ((k, v) in n.params) {
                 if (let Some(value) = this.findParam(v)) {
                     list[v] = Param(k, value)
