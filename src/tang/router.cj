@@ -1,11 +1,11 @@
 package tang
 
 from std import sync.ReentrantMutex
-from net import http.{ notFound as HttpNotFound, ResponseWriteStream, redirect  }
+from net import http.{ notFound as HttpNotFound, ResponseWriteStream, redirect, Handler }
 from net import http.HttpStatusCode
 from encoding import url.URL
 
-public class Router <: HttpHandler {
+public class Router <: Handler {
     public var config:Config
     public var group:Group
     let tree:Node
@@ -18,7 +18,7 @@ public class Router <: HttpHandler {
         this.group.router = this
         this.config.group = this.group
     }
-    
+
     public init(opts:Array<OptionFunc>) {
         this()
         for (opt in opts) {
@@ -42,7 +42,7 @@ public class Router <: HttpHandler {
             path = req.url.path
         }
         let (node, handler, wildcardLen) = this.tree.findRoute(req.method.toString(), path)
-        
+
         if (let None = node) {
             let redir = this.redir(req.method.toString(), path)
             if (let Some(fn) = redir) {

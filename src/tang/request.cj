@@ -1,10 +1,9 @@
 package tang
 from std import collection.{ArrayList, HashMap}
 from net import http.{ ResponseWriteStream, Request as HttpRequest, Handler as HttpHandler, FuncHandler, HttpStatusCode }
-from std import convert.parseInt64
+from std import convert.*
 from serialization import serialization.*
 from encoding import json.*
-from std import convert.*
 
 public type HandlerFunc = (ResponseWriteStream, Request) -> Unit
 
@@ -65,7 +64,7 @@ public class Request {
                 let data = f.getData()
                 match(data) {
                     case val:DataModelInt =>
-                        if (let Some(v) = parseInt64(raw)) {
+                        if (let Some(v) = Int64.tryParse(raw)) {
                             result.add(field<Int64>(name, v))
                         }
                         ()
@@ -73,11 +72,11 @@ public class Request {
                         result.add(field<String>(name, raw))
                         ()
                     case val:DataModelFloat =>
-                        if (let Some(v) = parseFloat64(raw)) {
+                        if (let Some(v) = Float64.tryParse(raw)) {
                             result.add(field<Float64>(name, v))
                         }
-                    case val:DataModelBool => 
-                        if (let Some(v) = parseBool(raw)) {
+                    case val:DataModelBool =>
+                        if (let Some(v) = Bool.tryParse(raw)) {
                             result.add(field<Bool>(name, v))
                         }
                     case val:DataModelSeq => println("[tang] unsuport field type: Array => ${name}")
@@ -127,7 +126,7 @@ public class Params{
     public func get(name:String):?String {
         match (this.node) {
             case None => None
-            case Some(n) => 
+            case Some(n) =>
                 if (n.params.contains(name)) {
                     let i = n.params[name]
                     this.findParam(i)
@@ -144,7 +143,7 @@ public class Params{
     public func int64(name:String):?Int64 {
         let i = this.get(name)
         if (let Some(v) = i) {
-            return parseInt64(v)
+            return Int64.tryParse(v)
         }
         return None
     }
@@ -154,7 +153,7 @@ public class Params{
         var pathLen = this.path.size
         var currNode = this.node
         var params = this.node?.params
-        var currParamIndex = (params?.size ?? 0) -1 
+        var currParamIndex = (params?.size ?? 0) -1
         if (let Some(n) = this.node) {
             if (currParamIndex == paramIndex) {
                 pathLen -= Int64(this.wildcardLen)
@@ -181,7 +180,7 @@ public class Params{
                 } else {
                     return None
                 }
-                
+
                 if (currParamIndex == paramIndex) {
                     println(path)
                     return path[pathLen..]
