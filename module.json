@@ -1,12 +1,19 @@
 {
-  "requires": {},
-  "command_option": "",
-  "PackageRequires": {},
-  "cjc_version": "0.31.4",
+  "cjc_version": "0.35.6",
+  "organization": "ystyle",
+  "name": "tang",
   "description": "nothing here",
   "version": "1.0.0",
-  "organization": "ystyle",
+  "requires": {},
+  "package_requires": {
+    "path_option": [],
+    "package_option": {}
+  },
   "foreign_requires": {},
-  "name": "tang",
-  "output_type": "static"
+  "output_type": "static",
+  "command_option": "",
+  "condition_option": {},
+  "link_option": "",
+  "cross_compile_configuration": {},
+  "package_configuration": {}
 }

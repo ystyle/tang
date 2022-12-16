@@ -51,14 +51,14 @@ public class Node {
             }
             return this.colon.getOrThrow()
         }
-        for(childNodeIndex in 0..this.nodes.size()) {
+        for(childNodeIndex in 0..this.nodes.size) {
             let childNode = this.nodes[childNodeIndex]
             if (childNode.part[0] != part[0]) {
                 continue
             }
             // check for a common prefix
-            for (i in 0..part.size()) {
-                if (i == childNode.part.size()) {
+            for (i in 0..part.size) {
+                if (i == childNode.part.size) {
                     break
                 }
                 let c = part[i]
@@ -71,11 +71,11 @@ public class Node {
                 return newNode
             }
             // Parts match completely.
-            if (part.size() > childNode.part.size()) {
-                let p = part[childNode.part.size()..]
+            if (part.size > childNode.part.size) {
+                let p = part[childNode.part.size..]
                 return childNode.addPart(p)
-            } else if (part.size() < childNode.part.size()) {
-                childNode.part = childNode.part[part.size()..]
+            } else if (part.size < childNode.part.size) {
+                childNode.part = childNode.part[part.size..]
                 let newNode = Node(part, ArrayList([childNode]))
                 this.nodes[childNodeIndex] = newNode
                 return newNode
@@ -113,7 +113,7 @@ public class Node {
                     }
                     found = childNode
                 } else {
-                    let partLen = childNode.part.size()
+                    let partLen = childNode.part.size
                     if (path.startsWith(childNode.part)) {
                         let (node, handler, wildcardLen) = childNode.l_findroute(meth, path[partLen..])
                         if (let Some(fn) = handler) {
@@ -148,7 +148,7 @@ public class Node {
         if (this.isWC) {
             let handler = this.handleMap.Get(meth)
             if (let Some(fn) = handler) {
-                    return (this, fn, UInt16(path.size()))
+                    return (this, fn, UInt16(path.size))
             }
             if (let None = found) {
                 found = this
@@ -158,7 +158,7 @@ public class Node {
     }
 
     public func indexNodes():Unit {
-        if (this.nodes.size() > 0) {
+        if (this.nodes.size > 0) {
             this.nodes.sortBy({n1, n2 =>
                 if (n1.part[0] < n2.part[0]) {
                     return Ordering.LT
@@ -168,17 +168,17 @@ public class Node {
                 return Ordering.EQ
             })
             this.index.minChar = this.nodes[0].part[0]
-            this.index.maxChar = this.nodes[this.nodes.size()-1].part[0]
+            this.index.maxChar = this.nodes[this.nodes.size-1].part[0]
             let size = Int64(UInt32(this.index.maxChar) - UInt32(this.index.minChar)) + 1
-            if (this.index.table.size() != size) {
+            if (this.index.table.size != size) {
                 this.index.table = Array(size, item: 0)
             } else {
-                for (i in 0..this.index.table.size()) {
+                for (i in 0..this.index.table.size) {
                     this.index.table[i] = 0
                 }
             }
             // Index nodes by the first char in a part.
-            for (childNodeIndex in 0..this.nodes.size()) {
+            for (childNodeIndex in 0..this.nodes.size) {
                 let childNode = this.nodes[childNodeIndex]
                 childNode.parent = this
                 childNode.indexNodes()
@@ -207,7 +207,7 @@ public class Index {
 }
 
 func join(ss:Array<String>, withSlash:Bool):String {
-    if (ss.size() == 0) {
+    if (ss.size == 0) {
         return ""
     }
     let s = String.join(ss, delimiter: "/")
@@ -227,7 +227,7 @@ func splitRoute(route:String):(ArrayList<String>, Option<HashMap<String, Int64>>
     }
     let l_route = route[1..]
     let ss = l_route.split('/')
-    if (ss.size() == 0) {
+    if (ss.size == 0) {
         throw Exception("invalid route: ${route}")
     }
     let p = RouteParser(ss)
@@ -253,7 +253,7 @@ func splitRoute(route:String):(ArrayList<String>, Option<HashMap<String, Int64>>
         }
     }
     p.finalizePart(false)
-    if (params.size() > 0) {
+    if (params.size > 0) {
         let v = paramMap(route, params)
         return (p.parts, v)        
     }
@@ -261,9 +261,9 @@ func splitRoute(route:String):(ArrayList<String>, Option<HashMap<String, Int64>>
 }
 
 func paramMap(route:String, params:ArrayList<String>):HashMap<String, Int64> {
-    let m = HashMap<String, Int64>(params.size())
+    let m = HashMap<String, Int64>(params.size)
     var i = 0
-    while (i < params.size()) {
+    while (i < params.size) {
         let param = params[i]
         if (param == "") {
             throw Exception("param must have a name: " + route)
@@ -285,7 +285,7 @@ class RouteParser {
         this.parts = ArrayList<String>()
     }
     func valid():Bool {
-        return this.i < this.segments.size()
+        return this.i < this.segments.size
     }
     func next():String {
         let s = this.segments[this.i]

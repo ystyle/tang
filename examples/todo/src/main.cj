@@ -19,7 +19,7 @@ func createTodo(w:ResponseWriteStream, r:Request) {
     let m = r.bindJSON<HashMap<String,String>>()
     if (let Some(t) = m) {
         let content = t["content"]
-        let todo = Todo(todoList.size() + 1, content)
+        let todo = Todo(todoList.size + 1, content)
         todoList.append(todo)
         JSON(w, todo)
     } else {

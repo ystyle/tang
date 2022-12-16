@@ -1,10 +1,9 @@
 package tang
 from std import collection.{ArrayList, HashMap}
 from net import http.{ ResponseWriteStream, Request as HttpRequest, Handler as HttpHandler, FuncHandler, HttpStatusCode }
-from std import convert.parseInt64
+from std import convert.*
 from serialization import serialization.*
 from encoding import json.*
-from std import convert.*
 
 public type HandlerFunc = (ResponseWriteStream, Request) -> Unit
 
@@ -39,7 +38,7 @@ public class Request {
         return this.params.route() ?? "/"
     }
     public func bindJSON<T>():?T where T <: Serializable<T>  {
-        var bs = Array<UInt8>(this.request.body.size(), item:0)
+        var bs = Array<UInt8>(this.request.body.length, item:0)
         this.request.body.read(bs)
         let body = String.fromUtf8(bs)
         var jv: JsonValue = JsonValue.fromStr(body)
@@ -65,7 +64,7 @@ public class Request {
                 let data = f.getData()
                 match(data) {
                     case val:DataModelInt =>
-                        if (let Some(v) = parseInt64(raw)) {
+                        if (let Some(v) = Int64.tryParse(raw)) {
                             result.add(field<Int64>(name, v))
                         }
                         ()
@@ -73,11 +72,11 @@ public class Request {
                         result.add(field<String>(name, raw))
                         ()
                     case val:DataModelFloat =>
-                        if (let Some(v) = parseFloat64(raw)) {
+                        if (let Some(v) = Float64.tryParse(raw)) {
                             result.add(field<Float64>(name, v))
                         }
-                    case val:DataModelBool => 
-                        if (let Some(v) = parseBool(raw)) {
+                    case val:DataModelBool =>
+                        if (let Some(v) = Bool.tryParse(raw)) {
                             result.add(field<Bool>(name, v))
                         }
                     case val:DataModelSeq => println("[tang] unsuport field type: Array => ${name}")
@@ -127,7 +126,7 @@ public class Params{
     public func get(name:String):?String {
         match (this.node) {
             case None => None
-            case Some(n) => 
+            case Some(n) =>
                 if (n.params.contains(name)) {
                     let i = n.params[name]
                     this.findParam(i)
@@ -144,25 +143,27 @@ public class Params{
     public func int64(name:String):?Int64 {
         let i = this.get(name)
         if (let Some(v) = i) {
-            return parseInt64(v)
+            return Int64.tryParse(v)
         }
         return None
     }
 
     func findParam(paramIndex:Int64):?String {
         var path = this.path
-        var pathLen = this.path.size()
+        var pathLen = this.path.size
         var currNode = this.node
         var params = this.node?.params
-        var currParamIndex = (params?.size() ?? 0) -1 
+        var currParamIndex = (params?.size ?? 0) -1
         if (let Some(n) = this.node) {
-            if (currParamIndex == paramIndex) {
+            if (n.isWC) {
+                if (currParamIndex == paramIndex) {
+                    pathLen -= Int64(this.wildcardLen)
+                    return path[pathLen..]
+                }
+                currParamIndex --
                 pathLen -= Int64(this.wildcardLen)
-                return path[pathLen..]
+                path = path[..pathLen]
             }
-            currParamIndex --
-            pathLen -= Int64(this.wildcardLen)
-            path = path[..pathLen]
         }
 
         while (true) {
@@ -170,7 +171,7 @@ public class Params{
                 case None  => break
                 case Some(n) =>
                 if (n.part[0] != ':') {
-                    pathLen -= n.part.size()
+                    pathLen -= n.part.size
                     path = path[..pathLen]
                     currNode = n.parent
                     continue
@@ -181,7 +182,7 @@ public class Params{
                 } else {
                     return None
                 }
-                
+
                 if (currParamIndex == paramIndex) {
                     println(path)
                     return path[pathLen..]
@@ -209,7 +210,7 @@ public class Params{
     public func slice():Array<?Param> {
         var list = Array<?Param>()
         if (let Some(n) = this.node) {
-            list = Array<?Param>(n.params.size(), item: None)
+            list = Array<?Param>(n.params.size, item: None)
             for ((k, v) in n.params) {
                 if (let Some(value) = this.findParam(v)) {
                     list[v] = Param(k, value)

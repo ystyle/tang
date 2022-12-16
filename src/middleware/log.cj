@@ -2,9 +2,9 @@ package middleware
 import tang.{ MiddlewareFunc, HandlerFunc }
 from std import log.Logger, log.SimpleLogger, log.LogLevel
 from std import time.Time
-from std import io.File, io.AccessMode, io.OpenMode
+from std import fs.{ File, OpenOption }
 
-let log:Logger = SimpleLogger("[Tang]", LogLevel.INFO, File("/dev/stdout", AccessMode.Write, OpenMode.Append))
+let log:Logger = SimpleLogger("[Tang]", LogLevel.INFO, File("/dev/stdout", OpenOption.CreateOrTruncate(false)))
 
 public func LogMiddleware (handler: HandlerFunc): HandlerFunc {
     return {w, r =>

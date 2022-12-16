@@ -105,14 +105,14 @@ public class Group {
 func joinPath(base:String, path:String):String {
     checkPath(path)
     let p = base + path
-    if (p.size() > 1 && p[p.size()-1] == '/') {
-        return p[..p.size()-1]
+    if (p.size > 1 && p[p.size-1] == '/') {
+        return p[..p.size-1]
     }
     return p
 }
 
 func checkPath(path:String) {
-    if (path.size() > 0 && path[0] != '/') {
+    if (path.size > 0 && path[0] != '/') {
         throw Exception("path ${path} must start with a slash")
     }
 }
