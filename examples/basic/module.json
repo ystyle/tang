@@ -1,5 +1,5 @@
 {
-  "cjc_version": "0.31.4",
+  "cjc_version": "0.35.6",
   "organization": "ystyle",
   "name": "basic",
   "description": "nothing here",
@@ -11,9 +11,15 @@
       "path": "../../"
     }
   },
-  "package_requires": {},
+  "package_requires": {
+    "path_option": [],
+    "package_option": {}
+  },
   "foreign_requires": {},
   "output_type": "executable",
   "command_option": "",
-  "cross_compile_configuration": {}
+  "condition_option": {},
+  "link_option": "",
+  "cross_compile_configuration": {},
+  "package_configuration": {}
 }

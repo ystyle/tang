@@ -155,13 +155,15 @@ public class Params{
         var params = this.node?.params
         var currParamIndex = (params?.size ?? 0) -1
         if (let Some(n) = this.node) {
-            if (currParamIndex == paramIndex) {
+            if (n.isWC) {
+                if (currParamIndex == paramIndex) {
+                    pathLen -= Int64(this.wildcardLen)
+                    return path[pathLen..]
+                }
+                currParamIndex --
                 pathLen -= Int64(this.wildcardLen)
-                return path[pathLen..]
+                path = path[..pathLen]
             }
-            currParamIndex --
-            pathLen -= Int64(this.wildcardLen)
-            path = path[..pathLen]
         }
 
         while (true) {

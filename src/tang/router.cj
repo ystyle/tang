@@ -1,11 +1,11 @@
 package tang
 
 from std import sync.ReentrantMutex
-from net import http.{ notFound as HttpNotFound, ResponseWriteStream, redirect, Handler }
+from net import http.{ notFound as HttpNotFound, ResponseWriteStream, redirect }
 from net import http.HttpStatusCode
 from encoding import url.URL
 
-public class Router <: Handler {
+public class Router <: HttpHandler {
     public var config:Config
     public var group:Group
     let tree:Node
