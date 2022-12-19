@@ -14,7 +14,7 @@ public class BasicAuth {
         this.realm = realm
         this.check = check
     }
-    public func Middleware (next:HandlerFunc):HandlerFunc {
+    public func middleware (next:HandlerFunc):HandlerFunc {
         return {w,r =>
             let ok = this.check(r)
             if (ok) {
@@ -30,19 +30,19 @@ public class BasicAuth {
     }
 }
 
-public func NewBasicAuthMiddleware(check:BasicAuthCheckFunc): MiddlewareFunc {
-    return NewBasicAuthMiddleware(check, Array<WithBasicAuthRealmOption>())
+public func newBasicAuthMiddleware(check:BasicAuthCheckFunc): MiddlewareFunc {
+    return newBasicAuthMiddleware(check, Array<WithBasicAuthRealmOption>())
 }
 
-public func NewBasicAuthMiddleware(check:BasicAuthCheckFunc, opts: Array<WithBasicAuthRealmOption>): MiddlewareFunc {
+public func newBasicAuthMiddleware(check:BasicAuthCheckFunc, opts: Array<WithBasicAuthRealmOption>): MiddlewareFunc {
     let basic = BasicAuth("Restricted", check)
     for (opt in opts) {
         opt(basic)
     }
-    return basic.Middleware
+    return basic.middleware
 }
 
-public func WithBasicAuthRealm (realm:String): WithBasicAuthRealmOption {
+public func withBasicAuthRealm (realm:String): WithBasicAuthRealmOption {
     return { basicauth =>
             basicauth.realm = #""${realm}""#
             ()

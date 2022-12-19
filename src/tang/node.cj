@@ -94,12 +94,12 @@ public class Node {
         }
         let p = path[1..] // strip leading "/"
         if (p.isEmpty()) {
-           return (this, this.handleMap.Get(meth), 0)
+           return (this, this.handleMap.get(meth), 0)
         }
-        return this.l_findroute(meth, p)
+        return this.findrouteImpl(meth, p)
     }
 
-    func l_findroute(meth:String, path:String):(?Node, ?HandlerFunc, UInt16) {
+    func findrouteImpl(meth:String, path:String):(?Node, ?HandlerFunc, UInt16) {
         var found:?Node = None
         let firstChar = path[0]
         if (firstChar >= this.index.minChar && firstChar <= this.index.maxChar) {
@@ -107,7 +107,7 @@ public class Node {
             if (i != 0) {
                 let childNode = this.nodes[Int64(i)-1]
                 if (childNode.part == path) {
-                    let handler = childNode.handleMap.Get(meth)
+                    let handler = childNode.handleMap.get(meth)
                     if (let Some(fn) = handler) {
                         return (childNode, fn, 0)
                     }
@@ -115,7 +115,7 @@ public class Node {
                 } else {
                     let partLen = childNode.part.size
                     if (path.startsWith(childNode.part)) {
-                        let (node, handler, wildcardLen) = childNode.l_findroute(meth, path[partLen..])
+                        let (node, handler, wildcardLen) = childNode.findrouteImpl(meth, path[partLen..])
                         if (let Some(fn) = handler) {
                             return (node, fn, wildcardLen)
                         }
@@ -130,12 +130,12 @@ public class Node {
         if (let Some(colon_) = this.colon) {
             let i = path.indexOf('/') ?? -1
             if (i > 0) {
-                let (node, handler, wildcardLen) = colon_.l_findroute(meth, path[i..])
+                let (node, handler, wildcardLen) = colon_.findrouteImpl(meth, path[i..])
                 if (let Some(fn) = handler) {
                     return (node, fn, wildcardLen)
                 }
             } else {
-                let handler = colon_.handleMap.Get(meth)
+                let handler = colon_.handleMap.get(meth)
                 if (let Some(fn) = handler) {
                     return (colon_, fn, 0)
                 }
@@ -146,7 +146,7 @@ public class Node {
         }
 
         if (this.isWC) {
-            let handler = this.handleMap.Get(meth)
+            let handler = this.handleMap.get(meth)
             if (let Some(fn) = handler) {
                     return (this, fn, UInt16(path.size))
             }
@@ -195,10 +195,10 @@ public class Node {
     }
 
     func setHandler(verb:String, handler:HandlerFunc) {
-        if (let Some(_) = this.handleMap.Get(verb) ){
+        if (let Some(_) = this.handleMap.get(verb) ){
             throw Exception("${this.route} already handles ${verb}")
         }
-        this.handleMap.Set(verb, handler)
+        this.handleMap.set(verb, handler)
     }
 }
 
@@ -319,7 +319,7 @@ func join (ss:Collection<String>, withSlash:Bool):?String {
 }
 
 public class HandleMap {
-    var get:?HandlerFunc = None
+    var get_:?HandlerFunc = None
     var post:?HandlerFunc = None
     var put:?HandlerFunc = None
     var delete:?HandlerFunc = None
@@ -330,9 +330,9 @@ public class HandleMap {
     init() {
     }
 
-    func Get(meth:String):?HandlerFunc {
+    func get(meth:String):?HandlerFunc {
         match (meth) {
-            case "GET" => this.get
+            case "GET" => this.get_
             case "POST" => this.post
             case "PUT" => this.put
             case "DELETE" => this.delete
@@ -344,9 +344,9 @@ public class HandleMap {
         }
     }
 
-    func Set(meth:String, handler:HandlerFunc) {
+    func set(meth:String, handler:HandlerFunc) {
         match (meth) {
-            case "GET" => this.get = handler
+            case "GET" => this.get_ = handler
             case "POST" => this.post = handler
             case "PUT" => this.put = handler
             case "DELETE" => this.delete = handler

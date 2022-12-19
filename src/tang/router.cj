@@ -27,10 +27,10 @@ public class Router <: HttpHandler {
     }
 
     public func serveHTTP(w: ResponseWriteStream, r: HttpRequest):Unit {
-        this.ServeHTTPError(w, r)
+        this.serveHTTPError(w, r)
     }
 
-    public func ServeHTTPError(w: ResponseWriteStream, r:HttpRequest):Unit {
+    public func serveHTTPError(w: ResponseWriteStream, r:HttpRequest):Unit {
         let (handler, params) = this.lookup(w, r)
         let rr = Request(r, params)
         handler(w, rr)
@@ -69,7 +69,7 @@ public class Router <: HttpHandler {
         if (path == "/") {
             return None
         }
-        var cleanPath  = CleanPath(path)
+        var cleanPath  = cleanPath(path)
         if (cleanPath != path) {
            let (_, handler, _) =  this.tree.findRoute(method, cleanPath)
            if (let Some(fn) = handler) {
@@ -91,7 +91,7 @@ public class Router <: HttpHandler {
         return None
     }
 
-    public func Compat(): CompatRouter {
+    public func compat(): CompatRouter {
         return CompatRouter(this)
     }
 }

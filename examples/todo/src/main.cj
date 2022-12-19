@@ -1,15 +1,15 @@
 from net import http.{Server, ResponseWriteStream}
 from std import collection.{ HashMap, ArrayList }
 from serialization import serialization.*
-from std import convert.parseInt64
+from std import convert.*
 from tang import tang.*
-from tang import middleware.{LogMiddleware, ExceptionMiddleware}
+from tang import middleware.{logMiddleware, exceptionMiddleware}
 
 func getOneTodo(w:ResponseWriteStream, r:Request) {
     let id = r.params.int64("id") ?? -1
     for (todo in todoList) {
         if (id == todo.id) {
-            JSON(w, todo)
+            json(w, todo)
             break
         }
     }
@@ -21,9 +21,9 @@ func createTodo(w:ResponseWriteStream, r:Request) {
         let content = t["content"]
         let todo = Todo(todoList.size + 1, content)
         todoList.append(todo)
-        JSON(w, todo)
+        json(w, todo)
     } else {
-        JSON(w, HashMap<String,String>([("msg", "请求参数错误")]))
+        json(w, HashMap<String,String>([("msg", "请求参数错误")]))
     }
 }
 
@@ -33,12 +33,12 @@ func updateTodo(w:ResponseWriteStream, r:Request) {
         for (todo in todoList) {
             if (temp.id == todo.id) {
                 todo.content = temp.content
-                JSON(w, todo)
+                json(w, todo)
                 break
             }
         }
     } else {
-        JSON(w, HashMap<String,String>([("msg", "请求参数错误")]))
+        json(w, HashMap<String,String>([("msg", "请求参数错误")]))
     }
 }
 
@@ -47,14 +47,14 @@ func deleteTodo(w:ResponseWriteStream, r:Request) {
      todoList.removeIf({todo => 
             return todo.id == id
     })
-    JSON(w, HashMap<String,String>([("msg", "ok")]))
+    json(w, HashMap<String,String>([("msg", "ok")]))
 }
 main() {
     // 创建路由
     let r = Router([
-        Use([
-            ExceptionMiddleware, // 放第一位，保证其它中间件也能正常执行
-            LogMiddleware // 访问日志记录
+        use([
+            exceptionMiddleware, // 放第一位，保证其它中间件也能正常执行
+            logMiddleware // 访问日志记录
         ])
     ])
     // 创建分组
@@ -63,7 +63,7 @@ main() {
         group.get("/todo/:id", getOneTodo)
         // 获取所有的todoList
         group.get("/todo", {w, r => 
-            JSON(w, todoList)
+            json(w, todoList)
         })
         // 创建一个todo
         group.post("/todo", createTodo)

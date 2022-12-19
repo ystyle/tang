@@ -1,5 +1,5 @@
 from tang import tang.*
-from tang import middleware.{LogMiddleware, ExceptionMiddleware}
+from tang import middleware.{logMiddleware, exceptionMiddleware}
 from net import http.Server, http.ResponseWriteStream
 from serialization import serialization.*
 from std import collection.HashMap
@@ -25,9 +25,9 @@ class User <: Serializable<User>  {
 main() {
     // 创建路由
     let r = Router([
-        Use([
-            ExceptionMiddleware, // 放第一位，保证其它中间件也能正常执行
-            LogMiddleware // 访问日志记录
+        use([
+            exceptionMiddleware, // 放第一位，保证其它中间件也能正常执行
+            logMiddleware // 访问日志记录
         ])
     ])
     // 创建分组
@@ -36,11 +36,11 @@ main() {
         group.get("/user", {w, r =>
             var query = Box<User>(User())
             r.bindQuery(query)
-            JSON(w, query.value)
+            json(w, query.value)
         })
         group.get("/user/current", {w, r =>
             let query = r.bindQuery(User())
-            JSON(w, query)
+            json(w, query)
         })
     })
 
