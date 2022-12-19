@@ -1,9 +1,9 @@
 from tang import tang.*
-from tang import middleware.{LogMiddleware, NewBasicAuthMiddleware, WithBasicAuthRealm}
+from tang import middleware.{logMiddleware, newBasicAuthMiddleware, withBasicAuthRealm}
 from net import http.Server, http.ResponseWriteStream, http.BasicAuth
 
 func debugHandle(w:ResponseWriteStream, r:Request) {
-    PlainString(w, "hello world!")
+    plainString(w, "hello world!")
 }
 
 func authUser (r:Request):Bool {
@@ -18,14 +18,14 @@ func authUser (r:Request):Bool {
 
 main() {
     let r = Router([
-        Use([
-            NewBasicAuthMiddleware(authUser, [WithBasicAuthRealm("test:test")]),
-            LogMiddleware
+        use([
+            newBasicAuthMiddleware(authUser, [withBasicAuthRealm("test:test")]),
+            logMiddleware
         ])
     ])
     r.group.withGroup("/api", {group =>
         group.get("/user/current", {w, r => 
-            PlainString(w, "hello world!")
+            plainString(w, "hello world!")
         })
     })
 

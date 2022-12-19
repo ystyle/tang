@@ -1,18 +1,18 @@
 from tang import tang.*
-from tang import middleware.{LogMiddleware, ExceptionMiddleware}
+from tang import middleware.{logMiddleware, exceptionMiddleware}
 from net import http.Server, http.ResponseWriteStream
 from std import collection.HashMap
 
 func debugHandle(w:ResponseWriteStream, r:Request) {
-    PlainString(w, "hello world!")
+    plainString(w, "hello world!")
 }
 
 main() {
     // 创建路由
     let r = Router([
-        Use([
-            ExceptionMiddleware, // 放第一位，保证其它中间件也能正常执行
-            LogMiddleware // 访问日志记录
+        use([
+            exceptionMiddleware, // 放第一位，保证其它中间件也能正常执行
+            logMiddleware // 访问日志记录
         ])
     ])
     // 创建分组
@@ -21,11 +21,11 @@ main() {
         group.get("/user/:id", {w, r => 
             let id = r.params.get("id") ?? "None"
             println("id: ${id}")
-            PlainString(w, r.request.requestURI)
+            plainString(w, r.request.requestURI)
         })
         // 静态路由
         group.get("/user/current", {w, r => 
-            PlainString(w, "current user: haha")
+            plainString(w, "current user: haha")
         })
         group.get("/user/exception", {w,r=>
             throw Exception("出现异常啦！")

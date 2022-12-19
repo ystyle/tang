@@ -38,11 +38,12 @@ public class Group {
     }
 
     public func use (middlewares:Array<MiddlewareFunc>):Group {
-        return this.newGroup("", opts: [Use(middlewares)])
+        let mdds = tang.use(middlewares)
+        return this.newGroup("", opts: [mdds])
     }
 
     public func withMiddleware(middleware:MiddlewareFunc):Group {
-        return this.newGroup("", opts: [WithMiddleware([middleware])])
+        return this.newGroup("", opts: [withMiddleware([middleware])])
     }
     public func withGroup(path:String, fn: (Group) -> Unit) {
         fn(this.newGroup(path))

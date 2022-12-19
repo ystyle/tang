@@ -2,7 +2,7 @@ package tang
 
 from std import collection.StringBuilder
 
-public func CleanPath(p:String):String {
+public func cleanPath(p:String):String {
     let stackBufSize = 128
     if (p == "") {
         return "/"

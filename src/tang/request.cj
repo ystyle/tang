@@ -9,11 +9,11 @@ public type HandlerFunc = (ResponseWriteStream, Request) -> Unit
 
 public type MiddlewareFunc = (HandlerFunc) -> HandlerFunc
 
-public func HTTPHandler(handler:HttpHandler):HandlerFunc {
-    return HTTPHandlerFunc(handler)
+public func httpHandler(handler:HttpHandler):HandlerFunc {
+    return httpHandlerFunc(handler)
 }
 
-public func HTTPHandlerFunc(handle:HttpHandler):HandlerFunc  {
+public func httpHandlerFunc(handle:HttpHandler):HandlerFunc  {
     return {w, r =>
         handle.serveHTTP(w, r.request)
         ()
@@ -221,20 +221,20 @@ public class Params{
     }
 }
 
-public func JSON<T>(w: ResponseWriteStream, value:T) where T <: Serializable<T>  {
-    JSONWithCode(w, HttpStatusCode.STATUS_OK, value)
+public func json<T>(w: ResponseWriteStream, value:T) where T <: Serializable<T>  {
+    jsonWithCode(w, HttpStatusCode.STATUS_OK, value)
 }
 
-public func JSONWithCode<T>(w: ResponseWriteStream, code:Int64, value:T) where T <: Serializable<T>  {
+public func jsonWithCode<T>(w: ResponseWriteStream, code:Int64, value:T) where T <: Serializable<T>  {
     w.writeStatusCode(code)
     w.write(value.serialize().toJson().toJsonString().toUtf8Array())
 }
 
-public func PlainString<T>(w: ResponseWriteStream, value:T) where T <: ToString   {
-    PlainStringWithCode(w, HttpStatusCode.STATUS_OK, value)
+public func plainString<T>(w: ResponseWriteStream, value:T) where T <: ToString   {
+    plainStringWithCode(w, HttpStatusCode.STATUS_OK, value)
 }
 
-public func PlainStringWithCode<T>(w: ResponseWriteStream, code:Int64, value:T) where T <: ToString {
+public func plainStringWithCode<T>(w: ResponseWriteStream, code:Int64, value:T) where T <: ToString {
     w.writeStatusCode(code)
     w.write(value.toString().toUtf8Array())
 }
