@@ -191,7 +191,7 @@ public class Node {
             c.parent = this
             c.indexNodes()
         }
-        ()
+        return ()
     }
 
     func setHandler(verb:String, handler:HandlerFunc) {

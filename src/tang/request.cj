@@ -16,7 +16,7 @@ public func httpHandler(handler:HttpHandler):HandlerFunc {
 public func httpHandlerFunc(handle:HttpHandler):HandlerFunc  {
     return {w, r =>
         handle.serveHTTP(w, r.request)
-        ()
+        return ()
     }
 }
 

@@ -45,6 +45,6 @@ public func newBasicAuthMiddleware(check:BasicAuthCheckFunc, opts: Array<WithBas
 public func withBasicAuthRealm (realm:String): WithBasicAuthRealmOption {
     return { basicauth =>
             basicauth.realm = #""${realm}""#
-            ()
+        return ()
     }
 }
