@@ -103,8 +103,8 @@ public class  CompatRouter {
 func redirectHandler(newPath:String):HandlerFunc {
     return {w, r =>
         let newUrl = URL.parse(newPath)
-        newUrl.fragment = r.request.url.fragment
-        newUrl.rawQuery = r.request.url.rawQuery
+        // newUrl.fragment = r.request.url.fragment
+        // newUrl.rawQuery = r.request.url.rawQuery
         redirect(w, r.request, newUrl.toString(), HttpStatusCode.STATUS_MOVED_PERMANENTLY)
     }
 }

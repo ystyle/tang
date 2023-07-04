@@ -57,7 +57,7 @@ public class Request {
         }
         let result = DataModelStruct()
         let fields = dms.getFields()
-        let query = this.request.url.query()
+        let query = this.request.url.queryForm
         for (f in fields) {
             let name = f.getName()
             if (let Some(raw) = query.get(name)) {

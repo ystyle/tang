@@ -24,7 +24,7 @@ main() {
             plainString(w, r.request.requestURI)
         })
         // 静态路由
-        group.get("/user/current", {w, r => 
+        group.get("/user/current", {w, _ => 
             plainString(w, "current user: haha")
         })
         group.get("/user/exception", {w,r=>
