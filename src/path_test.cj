@@ -1,7 +1,7 @@
 package tang
 
-from std import unittest.*
-from std import unittest.testmacro.*
+import std.unittest.*
+import std.unittest.testmacro.*
 
 struct CleanTest {
     CleanTest(let path:String, let result:String){}
@@ -61,11 +61,11 @@ var cleanTests = Array<CleanTest>([
 @Test
 func TestPathClean():Unit {
     for (test in cleanTests) {
-        let s1 = CleanPath(test.path)
+        let s1 = cleanPath(test.path)
         if (s1 != test.result) {
             throw Exception("Clean(${test.path}) = ${s1}, want ${test.result}")
         }
-        let s2 = CleanPath(test.result)
+        let s2 = cleanPath(test.result)
         if (s2 != test.result) {
             throw Exception("Clean(${test.result}) = ${s2}, want ${test.result}")
         }

@@ -4,3 +4,5 @@ build
 unittest
 module-resolve.json
 .idea
+target
+.cache

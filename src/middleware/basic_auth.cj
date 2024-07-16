@@ -1,10 +1,10 @@
-package middleware
+package tang.middleware
 
-from net import http.ResponseWriteStream, http.HttpStatusCode
-import tang.{ MiddlewareFunc, HandlerFunc, Request }
+import net.http.{HttpRequest,HttpContext, HttpStatusCode}
+import tang.{ MiddlewareFunc, HandlerFunc, TangHttpContext }
 
 
-public type BasicAuthCheckFunc = (Request) -> Bool
+public type BasicAuthCheckFunc = (HttpRequest) -> Bool
 public type WithBasicAuthRealmOption = (BasicAuth) -> Unit
 
 public class BasicAuth {
@@ -15,18 +15,17 @@ public class BasicAuth {
         this.check = check
     }
     public func middleware (next:HandlerFunc):HandlerFunc {
-        return {w,r =>
-            let ok = this.check(r)
+        return {ctx =>
+            let ok = this.check(ctx.request)
             if (ok) {
-                next(w, r)
+                next(ctx)
             } else {
-                this.basicAuth(w, r)
+                this.basicAuth(ctx)
             }
         }
     }
-    func basicAuth(w:ResponseWriteStream, r:Request):Unit {
-        w.header().add("WWW-Authenticate", "basic realm=${this.realm}")
-        w.writeStatusCode(HttpStatusCode.STATUS_UNAUTHORIZED)
+    func basicAuth(ctx:TangHttpContext):Unit {
+        ctx.responseBuilder.status(HttpStatusCode.STATUS_UNAUTHORIZED).header("WWW-Authenticate", "basic realm=${this.realm}")
     }
 }
 

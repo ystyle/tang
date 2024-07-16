@@ -16,7 +16,7 @@
 from tang import tang.*
 from tang import middleware.LogMiddleware
 from net import http.Server, http.ResponseWriteStream
-from std import collection.HashMap
+import std.collection.HashMap
 
 func debugHandle(w:ResponseWriteStream, r:Request) {
    PlainString(w, "hello world!")

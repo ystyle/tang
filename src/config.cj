@@ -42,9 +42,9 @@ public func use(fns:Array<MiddlewareFunc>):GroupOptionFunc {
 public func withHandler(fn:HandlerFunc):GroupOptionFunc {
    return { c => 
         let md:MiddlewareFunc = {next => 
-            return { w, r =>
-                fn(w, r)
-                return next(w, r)
+            return { ctx =>
+                fn(ctx)
+                return next(ctx)
             }
         }
         c.group.stack.append(md)

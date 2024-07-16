@@ -1,13 +1,14 @@
-package middleware
-import tang.plainStringWithCode
+package tang.middleware
 
-public func exceptionMiddleware (handler: HandlerFunc): HandlerFunc {
-    return {w, r =>
-       try {
-            handler(w, r)
-       } catch (e:Exception) {
-           e.printStackTrace()
-           plainStringWithCode(w, 500, "Error 500: Internal Server Error\n")
-       }
+import tang.{HandlerFunc}
+
+public func exceptionMiddleware(handler: HandlerFunc): HandlerFunc {
+    return {
+        ctx => try {
+            handler(ctx)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ctx.responseBuilder.status(500).body("Error 500: Internal Server Error\n")
+        }
     }
 }

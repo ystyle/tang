@@ -1,6 +1,6 @@
 package tang
 
-from std import collection.ArrayList
+import std.collection.ArrayList
 
 public class Group {
     var router:?Router
@@ -25,7 +25,7 @@ public class Group {
     }
 
     public func newGroup(path:String, opts!:Array<GroupOptionFunc>=Array()):Group {
-        let group = if (let Some(route) = this.router) {
+        let group = if (let Some(route) <- this.router) {
             Group(route, joinPath(this.path, path) , ArrayList(this.stack))
         } else {
             Group(joinPath(this.path, path), stack: ArrayList(this.stack))
@@ -38,7 +38,7 @@ public class Group {
     }
 
     public func use (middlewares:Array<MiddlewareFunc>):Group {
-        let mdds = tang.use(middlewares)
+        let mdds = withMiddleware(middlewares)
         return this.newGroup("", opts: [mdds])
     }
 
@@ -49,7 +49,7 @@ public class Group {
         fn(this.newGroup(path))
     }
     public func handle(meth:String, path:String, handler:HandlerFunc) {
-        if (let Some(r) = this.router) {
+        if (let Some(r) <- this.router) {
             synchronized(r.mu) {
                 checkPath(path)
                 let p = this.path + path
@@ -58,11 +58,11 @@ public class Group {
                 }
                 let tree = this.router?.tree
                 let node =  tree?.addRoute(p)
-                if (let Some(n) = node) {
+                if (let Some(n) <- node) {
                     n.setHandler(meth, this.wrap(handler))
-                    if (let None = n.handleMap.notAllowed) {
+                    if (let None <- n.handleMap.notAllowed) {
                         let config = this.router?.config
-                        if (let Some(fn) = config?.methodNotAllowedHandler) {
+                        if (let Some(fn) <- config?.methodNotAllowedHandler) {
                             n.handleMap.notAllowed = this.wrap(fn)
                         }
                     }
@@ -105,15 +105,15 @@ public class Group {
 
 func joinPath(base:String, path:String):String {
     checkPath(path)
-    let p = base + path
-    if (p.size > 1 && p[p.size-1] == '/') {
-        return p[..p.size-1]
+    let p = (base + path).toRuneArray()
+    if (p.size > 1 && p[p.size-1] == r'/') {
+        return String(p[..p.size-1])
     }
-    return p
+    return String(p)
 }
 
 func checkPath(path:String) {
-    if (path.size > 0 && path[0] != '/') {
+    if (path.size > 0 && path.toRuneArray()[0] != r'/') {
         throw Exception("path ${path} must start with a slash")
     }
 }

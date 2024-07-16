@@ -1,6 +1,6 @@
 package tang
 
-from std import collection.{ HashMap, ArrayList, StringBuilder }
+import std.collection.{ HashMap, ArrayList }
 
 public class Node {
     var route:String = ""
@@ -11,7 +11,7 @@ public class Node {
     var colon:?Node = None
     var isWC = false
     var nodes = ArrayList<Node>()
-    var index:Index = Index([], ' ', ' ')
+    var index:Index = Index([], r' ', r' ')
     init() {
         
     }
@@ -46,7 +46,7 @@ public class Node {
             return this
         }
         if (part == ":") {
-            if (let None = this.colon) {
+            if (let None <- this.colon) {
                 this.colon = Node(":")
             }
             return this.colon.getOrThrow()
@@ -99,27 +99,28 @@ public class Node {
         return this.findrouteImpl(meth, p)
     }
 
-    func findrouteImpl(meth:String, path:String):(?Node, ?HandlerFunc, UInt16) {
+    func findrouteImpl(meth:String, p:String):(?Node, ?HandlerFunc, UInt16) {
+        let path = p.toRuneArray()
         var found:?Node = None
         let firstChar = path[0]
         if (firstChar >= this.index.minChar && firstChar <= this.index.maxChar) {
             let i = this.index.table[Int64(UInt32(firstChar)-UInt32(this.index.minChar))]
             if (i != 0) {
                 let childNode = this.nodes[Int64(i)-1]
-                if (childNode.part == path) {
+                if (childNode.part == String(path)) {
                     let handler = childNode.handleMap.get(meth)
-                    if (let Some(fn) = handler) {
+                    if (let Some(fn) <- handler) {
                         return (childNode, fn, 0)
                     }
                     found = childNode
                 } else {
                     let partLen = childNode.part.size
-                    if (path.startsWith(childNode.part)) {
-                        let (node, handler, wildcardLen) = childNode.findrouteImpl(meth, path[partLen..])
-                        if (let Some(fn) = handler) {
+                    if (String(path).startsWith(childNode.part)) {
+                        let (node, handler, wildcardLen) = childNode.findrouteImpl(meth, String(path[partLen..]))
+                        if (let Some(fn) <- handler) {
                             return (node, fn, wildcardLen)
                         }
-                        if (let Some(n) = node ) {
+                        if (let Some(n) <-node ) {
                             found = node
                         }
                     }
@@ -127,19 +128,19 @@ public class Node {
             }
         }
 
-        if (let Some(colon_) = this.colon) {
-            let i = path.indexOf('/') ?? -1
+        if (let Some(colon_) <-this.colon) {
+            let i = path.indexOf(r'/') ?? -1
             if (i > 0) {
-                let (node, handler, wildcardLen) = colon_.findrouteImpl(meth, path[i..])
-                if (let Some(fn) = handler) {
+                let (node, handler, wildcardLen) = colon_.findrouteImpl(meth, String(path[i..]))
+                if (let Some(fn) <-handler) {
                     return (node, fn, wildcardLen)
                 }
             } else {
                 let handler = colon_.handleMap.get(meth)
-                if (let Some(fn) = handler) {
+                if (let Some(fn) <-handler) {
                     return (colon_, fn, 0)
                 }
-                if (let None = found) {
+                if (let None <-found) {
                     found = colon_
                 }
             }
@@ -147,10 +148,10 @@ public class Node {
 
         if (this.isWC) {
             let handler = this.handleMap.get(meth)
-            if (let Some(fn) = handler) {
+            if (let Some(fn) <-handler) {
                     return (this, fn, UInt16(path.size))
             }
-            if (let None = found) {
+            if (let None <-found) {
                 found = this
             }
         }
@@ -159,7 +160,7 @@ public class Node {
 
     public func indexNodes():Unit {
         if (this.nodes.size > 0) {
-            this.nodes.sortBy({n1, n2 =>
+            this.nodes.sortBy(stable: true, comparator:  {n1, n2 =>
                 if (n1.part[0] < n2.part[0]) {
                     return Ordering.LT
                 } else if (n1.part[0] > n2.part[0]) {
@@ -167,8 +168,8 @@ public class Node {
                 }
                 return Ordering.EQ
             })
-            this.index.minChar = this.nodes[0].part[0]
-            this.index.maxChar = this.nodes[this.nodes.size-1].part[0]
+            this.index.minChar = this.nodes[0].part.toRuneArray()[0]
+            this.index.maxChar = this.nodes[this.nodes.size-1].part.toRuneArray()[0]
             let size = Int64(UInt32(this.index.maxChar) - UInt32(this.index.minChar)) + 1
             if (this.index.table.size != size) {
                 this.index.table = Array(size, item: 0)
@@ -187,7 +188,7 @@ public class Node {
             }
 
         }
-        if (let Some(c) = this.colon) {
+        if (let Some(c) <-this.colon) {
             c.parent = this
             c.indexNodes()
         }
@@ -195,7 +196,7 @@ public class Node {
     }
 
     func setHandler(verb:String, handler:HandlerFunc) {
-        if (let Some(_) = this.handleMap.get(verb) ){
+        if (let Some(_) <- this.handleMap.get(verb) ){
             throw Exception("${this.route} already handles ${verb}")
         }
         this.handleMap.set(verb, handler)
@@ -203,7 +204,7 @@ public class Node {
 }
 
 public class Index {
-    Index(var table:Array<UInt8>, var minChar:Char, var maxChar:Char) {}
+    Index(var table:Array<UInt8>, var minChar:Rune, var maxChar:Rune) {}
 }
 
 func join(ss:Array<String>, withSlash:Bool):String {
@@ -219,7 +220,7 @@ func join(ss:Array<String>, withSlash:Bool):String {
 
 
 func splitRoute(route:String):(ArrayList<String>, Option<HashMap<String, Int64>>) {
-    if (route == "" || route[0] != '/') {
+    if (route == "" || route.toRuneArray()[0] != r'/') {
         throw Exception("invalid route: ${route}")
     }
     if (route == "/") {
@@ -297,7 +298,7 @@ class RouteParser {
     }
     func finalizePart(withSlash:Bool) {
         let part = join(this.acc, withSlash)
-        if (let Some(v) = part) {
+        if (let Some(v) <-part) {
             this.parts.append(v)
         }
         this.acc.clear()

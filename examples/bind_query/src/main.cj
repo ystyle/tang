@@ -2,7 +2,7 @@ from tang import tang.*
 from tang import middleware.{logMiddleware, exceptionMiddleware}
 from net import http.Server, http.ResponseWriteStream
 from serialization import serialization.*
-from std import collection.HashMap
+import std.collection.HashMap
 
 class User <: Serializable<User>  {
     

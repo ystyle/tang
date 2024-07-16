@@ -1,7 +1,7 @@
 from net import http.{Server, ResponseWriteStream}
-from std import collection.{ HashMap, ArrayList }
+import std.collection.{ HashMap, ArrayList }
 from serialization import serialization.*
-from std import convert.*
+import std.convert.*
 from tang import tang.*
 from tang import middleware.{logMiddleware, exceptionMiddleware}
 

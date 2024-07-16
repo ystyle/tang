@@ -1,7 +1,7 @@
 from tang import tang.*
 from tang import middleware.{logMiddleware, exceptionMiddleware}
 from net import http.Server, http.ResponseWriteStream
-from std import collection.HashMap
+import std.collection.HashMap
 
 main() {
     // 创建路由

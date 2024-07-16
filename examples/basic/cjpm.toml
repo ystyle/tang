@@ -1,0 +1,14 @@
+[dependencies]
+  tang = {path = "../../", version = "1.0.0"}
+
+[package]
+  cjc-version = "0.35.6"
+  compile-option = ""
+  description = "nothing here"
+  link-option = ""
+  name = "basic"
+  output-type = "executable"
+  src-dir = "src"
+  target-dir = ""
+  version = "1.0.0"
+  package-configuration = {}
