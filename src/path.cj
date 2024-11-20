@@ -1,6 +1,7 @@
 package tang
 
 import std.io.{StringReader, StringWriter}
+import std.collection.ArrayList
 
 public func cleanPath(pa:String):String {
     let p = pa.toRuneArray()
@@ -8,13 +9,13 @@ public func cleanPath(pa:String):String {
     if (p.size == 0) {
         return "/"
     }
-    var buff = StringBuilder()
+    var buff = ArrayList<Rune>(stackBufSize)
     let n = p.size
     var r = 1
     var w = 1
     if (p[0] != r'/') {
         r = 0
-        buff.append('/')
+        buff.append(r'/')
     }
     var trailing = n > 1 && p[n-1] == r'/'
     while (r < n) {
@@ -34,7 +35,7 @@ public func cleanPath(pa:String):String {
                         w--
                     }
                 } else {
-                    while (w > 1 && buff.toString().toRuneArray()[w] != r'/') {
+                    while (w > 1 && buff[w] != r'/') {
                         w--
                     }
                 }
@@ -58,20 +59,21 @@ public func cleanPath(pa:String):String {
     if (buff.size == 0) {
         return String(p[..w])
     }
-    return buff.toString()[0..w]
+    return String(buff[0..w])
 }
 
-func bufApp(buf:StringBuilder, s:String, w:Int64, c:Rune):Unit{
+func bufApp(buf:ArrayList<Rune>, s:String, w:Int64, c:Rune):Unit{
     if (buf.size == 0) {
         if (s.toRuneArray()[w] == c) {
             return
         }
-        buf.append(s[..w])
+        println(1)
+        buf.appendAll(s[..w].toRuneArray())
+        println(2)
     }
     if (buf.size > w) {
-        // todo 
-        // buf.remove(w)
-        // buf.insert(w, c)
+        buf.remove(w)
+        buf.insert(w, c)
     } else {
         buf.append(c)
     }

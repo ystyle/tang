@@ -1,0 +1,15 @@
+[dependencies]
+tang = {path = "../../", version = "1.0.0"}
+
+[package]
+  cjc-version = "0.56.4"
+  compile-option = ""
+  description = "nothing here"
+  link-option = ""
+  name = "basicauth"
+  output-type = "executable"
+  override-compile-option = ""
+  src-dir = ""
+  target-dir = ""
+  version = "1.0.0"
+  package-configuration = {}

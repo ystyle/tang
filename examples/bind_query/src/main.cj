@@ -1,12 +1,13 @@
-from tang import tang.*
-from tang import middleware.{logMiddleware, exceptionMiddleware}
-from net import http.Server, http.ResponseWriteStream
-from serialization import serialization.*
+package bind_query
+
+import tang.*
+import tang.middleware.{logMiddleware, exceptionMiddleware}
+import net.http.{ServerBuilder}
+import serialization.serialization.*
 import std.collection.HashMap
 
-class User <: Serializable<User>  {
-    
-    User(var id!:Int64 = 0, var name!:String = "") {}
+class User <: Serializable<User> {
+    User(var id!: Int64 = 0, var name!: String = "") {}
 
     public func serialize(): DataModel {
         return DataModelStruct().add(field<Int64>("id", this.id)).add(field<String>("name", this.name))
@@ -24,29 +25,31 @@ class User <: Serializable<User>  {
 
 main() {
     // 创建路由
-    let r = Router([
-        use([
-            exceptionMiddleware, // 放第一位，保证其它中间件也能正常执行
-            logMiddleware // 访问日志记录
-        ])
-    ])
+    let r = Router([use([exceptionMiddleware, // 放第一位，保证其它中间件也能正常执行
+        logMiddleware // 访问日志记录
+        ])])
     // 创建分组
-    r.group.withGroup("/api", {group =>
-        // 绑定query参数
-        group.get("/user", {w, r =>
-            var query = Box<User>(User())
-            r.bindQuery(query)
-            json(w, query.value)
-        })
-        group.get("/user/current", {w, r =>
-            let query = r.bindQuery(User())
-            json(w, query)
-        })
-    })
-
+    let group = r.group("/api")
+    // 绑定query参数
+    group.get(
+        "/user",
+        {
+            ctx =>
+            var query = User()
+            ctx.bindQuery(query)
+            ctx.json(query)
+        }
+    )
+    group.get(
+        "/user/current",
+        {
+            ctx =>
+            let query = ctx.bindQuery(User())
+            ctx.json(query)
+        }
+    )
     // 构建并启动服务
-    println("listening on http://localhost:10000")
-    let srv = Server(r)
-    srv.port = 10000
-    srv.listenAndServe()
+    let server = ServerBuilder().distributor(r).addr("127.0.0.1").port(10000).build()
+    println("listening on http://localhost:${server.port}")
+    server.serve()
 }

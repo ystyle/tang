@@ -13,49 +13,56 @@
 
 ### 示例
 ```cj
-from tang import tang.*
-from tang import middleware.LogMiddleware
-from net import http.Server, http.ResponseWriteStream
+import tang.*
+import tang.middleware.{logMiddleware, exceptionMiddleware, requestid}
+import net.http.{ServerBuilder, HttpContext}
 import std.collection.HashMap
 
-func debugHandle(w:ResponseWriteStream, r:Request) {
-   PlainString(w, "hello world!")
+func helloHandle(ctx: TangHttpContext): Unit {
+    ctx.writeString("hello world!")
 }
 
 main() {
-    // 初始化router
-    let r = Router([
-        Use([  // 使用中间件
-            LogMiddleware // 访问日志中间件
-        ])
-    ])
-    // 创建路由分组
-    r.group.withGroup("/api", {group =>
-        // 命名路径 
-        group.get("/user/:id", {w,r => 
-            let id = r.params.get("id") ?? "None" // 获取路径参数
-            println("id: ${id}")
-            PlainString(w, id) // 可以返回实现了ToString接口的类型
-        })
-        // 静态路径
-        group.get("/user/current", {w, r =>
-            let m = HashMap<String, String>()
-            m.put("id", "1")
-            m.put("name", "糖")
-            JSON(w, m) // 可以返回实现了 Serializable 接口的类型
-        })
-        // 通配符路径
-        group.get("/user/*path", debugHandle)
-    })
-    
-    r.group.get("/hello", debugHandle)
-    
-    println("listening on http://localhost:10000")
+    // 创建路由
+    let r = Router(
+        use(
+            exceptionMiddleware, // 放第一位，保证其它中间件也能正常执行
+            logMiddleware, // 访问日志记录
+            requestid
+        )
+    )
+    // 声明接口
+    r.get("/hello", helloHandle)
 
-    // 初始并启动服务器
-    let srv = Server(r)
-    srv.port = 10000
-    srv.listenAndServe()
+    // 创建分组
+    let group = r.group("/api")
+    // 命名路由
+    group.get(
+        "/user/:id",
+        {
+            ctx => ctx.responseBuilder.body("测试")
+        }
+    )
+    // 静态路由
+    group.get(
+        "/user/current",
+        {
+            ctx => ctx.responseBuilder.body("current user: haha")
+        }
+    )
+    group.get(
+        "/user/exception",
+        {
+            ctx => throw Exception("出现异常啦！")
+        }
+    )
+    // 通配符路由
+    group.get("/user/*path", helloHandle)
+    // 构建并启动服务
+
+    let server = ServerBuilder().distributor(r).addr("127.0.0.1").port(10000).build()
+    println("listening on http://localhost:${server.port}")
+    server.serve()
 }
 ```
 

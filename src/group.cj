@@ -1,34 +1,34 @@
 package tang
 
 import std.collection.ArrayList
+import std.reflect.TypeInfo
 
 public class Group {
     var router:?Router
     let path:String
     var stack = ArrayList<MiddlewareFunc>()
 
-    public init(router:Router, path:String, stack:ArrayList<MiddlewareFunc>) {
+    init(router:Router, path:String, stack:Array<MiddlewareFunc>) {
         this.router = router
         this.path = path
-        this.stack = stack
+        this.stack.appendAll(stack)
     }
 
-    public init(path:String, stack!:ArrayList<MiddlewareFunc> = ArrayList()) {
+    init(path:String, stack!:Array<MiddlewareFunc> = []) {
         this.router = None
         this.path = path
-        this.stack = stack
-
+        this.stack.appendAll(stack)
     }
-    public init() {
+    init() {
         this.router = None
         this.path = ""
     }
 
-    public func newGroup(path:String, opts!:Array<GroupOptionFunc>=Array()):Group {
+    public func group(path:String, opts!:Array<GroupOptionFunc>=Array()):Group {
         let group = if (let Some(route) <- this.router) {
-            Group(route, joinPath(this.path, path) , ArrayList(this.stack))
+            Group(route, joinPath(this.path, path) , this.stack.toArray())
         } else {
-            Group(joinPath(this.path, path), stack: ArrayList(this.stack))
+            Group(joinPath(this.path, path), stack: this.stack.toArray())
         }
         let cfg = Config(group)
         for (opt in opts) {
@@ -38,16 +38,16 @@ public class Group {
     }
 
     public func use (middlewares:Array<MiddlewareFunc>):Group {
-        let mdds = withMiddleware(middlewares)
-        return this.newGroup("", opts: [mdds])
+        this.stack.appendAll(middlewares)
+        return this
     }
 
-    public func withMiddleware(middleware:MiddlewareFunc):Group {
-        return this.newGroup("", opts: [withMiddleware([middleware])])
-    }
-    public func withGroup(path:String, fn: (Group) -> Unit) {
-        fn(this.newGroup(path))
-    }
+    // public func withMiddleware(middleware:MiddlewareFunc):Group {
+    //     return this.group("", opts: [withMiddleware([middleware])])
+    // }
+    // public func withGroup(path:String, fn: (Group) -> Unit) {
+    //     fn(this.newGroup(path))
+    // }
     public func handle(meth:String, path:String, handler:HandlerFunc) {
         if (let Some(r) <- this.router) {
             synchronized(r.mu) {
@@ -56,6 +56,7 @@ public class Group {
                 if (p.isEmpty()) {
                     throw Exception("path can't be empty")
                 }
+                println("${meth}\t|\t${p}")
                 let tree = this.router?.tree
                 let node =  tree?.addRoute(p)
                 if (let Some(n) <- node) {

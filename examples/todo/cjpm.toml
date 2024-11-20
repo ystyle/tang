@@ -1,0 +1,14 @@
+[dependencies]
+tang = { path = "../../" }
+[package]
+  cjc-version = "0.57.3"
+  compile-option = ""
+  description = "nothing here"
+  link-option = ""
+  name = "todo"
+  output-type = "executable"
+  override-compile-option = ""
+  src-dir = ""
+  target-dir = ""
+  version = "1.0.0"
+  package-configuration = {}

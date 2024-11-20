@@ -1,13 +1,15 @@
 [dependencies]
+  sonyflake = { git = "https://github.com/ystyle/cj-sonyflake", branch = "master"}
 
 [package]
-  cjc-version = "0.35.6"
+  cjc-version = "0.56.0"
   compile-option = ""
-  description = "nothing here"
+  description = "一个轻量级的web框架"
   link-option = ""
   name = "tang"
   output-type = "static"
   src-dir = "src"
   target-dir = ""
   version = "1.0.0"
-  package-configuration = {}
+[package.package-configuration."tang.middleware"]
+  compile-option = "-Woff unused"

@@ -6,17 +6,19 @@ import net.http.HttpStatusCode
 import encoding.url.URL
 
 public class Router <: HttpRequestDistributor {
-    public var config: Config
-    public var group: Group
+    var config: Config
+    var _group: Group
     let tree: Node
     let mu: ReentrantMutex = ReentrantMutex()
 
     public init() {
+        println("\tTang Web Frameworks")
+        println("method\t|\tpath")
         this.tree = Node("/", "/")
-        this.group = Group()
-        this.config = Config(this.group)
-        this.group.router = this
-        this.config.group = this.group
+        this._group = Group()
+        this.config = Config(this._group)
+        this._group.router = this
+        this.config.group = this._group
     }
 
     public init(opts: Array<OptionFunc>) {
@@ -40,16 +42,16 @@ public class Router <: HttpRequestDistributor {
         let fn: HandlerFunc = {
             ctx => handler.handle(ctx.context)
         }
-        this.group.get(path, fn)
-        this.group.post(path, fn)
-        this.group.put(path, fn)
-        this.group.delete(path, fn)
-        this.group.patch(path, fn)
-        this.group.head(path, fn)
-        this.group.options(path, fn)
+        this._group.get(path, fn)
+        this._group.post(path, fn)
+        this._group.put(path, fn)
+        this._group.delete(path, fn)
+        this._group.patch(path, fn)
+        this._group.head(path, fn)
+        this._group.options(path, fn)
     }
 
-    public func distribute(path: String): HttpRequestHandler {
+    public func distribute(_: String): HttpRequestHandler {
         return FuncHandler(
             {
                 ctx =>
@@ -60,8 +62,8 @@ public class Router <: HttpRequestDistributor {
         )
     }
 
-    public func newGroup(path:String): Group {
-        this.group.newGroup(path)
+    public func group(path:String): Group {
+        this._group.group(path)
     }
 
     func lookup(ctx: HttpContext): (HandlerFunc, Params) {
@@ -72,6 +74,7 @@ public class Router <: HttpRequestDistributor {
         let (node, handler, wildcardLen) = this.tree.findRoute(ctx.request.method.toString(), path)
 
         if (let None <- node) {
+            // no found
             let redir = this.redir(ctx.request.method.toString(), path)
             if (let Some(fn) <- redir) {
                 return (fn, Params())
@@ -119,20 +122,35 @@ public class Router <: HttpRequestDistributor {
         return None
     }
 
-    public func compat(): CompatRouter {
-        return CompatRouter(this)
+    public func get (path:String, handler:HandlerFunc) {
+        this._group.handle("GET", path, handler)
     }
-}
 
-public class CompatRouter {
-    CompatRouter(let router: Router) {}
+    public func post (path:String, handler:HandlerFunc) {
+        this._group.handle("POST", path, handler)
+    }
+    public func put (path:String, handler:HandlerFunc) {
+        this._group.handle("PUT", path, handler)
+    }
+    public func delete (path:String, handler:HandlerFunc) {
+        this._group.handle("DELETE", path, handler)
+    }
+    public func patch (path:String, handler:HandlerFunc) {
+        this._group.handle("PATCH", path, handler)
+    }
+    public func head (path:String, handler:HandlerFunc) {
+        this._group.handle("HEAD", path, handler)
+    }
+    public func options (path:String, handler:HandlerFunc) {
+        this._group.handle("OPTIONS", path, handler)
+    }
 }
 
 func redirectHandler(newPath: String): HandlerFunc {
     return {
         _ =>
         let newUrl = URL.parse(newPath)
-        RedirectHandler(newPath.toString(), HttpStatusCode.STATUS_MOVED_PERMANENTLY).handle
+        RedirectHandler(newUrl.toString(), HttpStatusCode.STATUS_MOVED_PERMANENTLY).handle
     }
 }
 

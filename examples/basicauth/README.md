@@ -19,7 +19,7 @@
     < Date: Thu, 11Aug 2022 09:06:02 GMT
     < Connection: keep-alive
     < Content-Type: text/plain; charset=utf-8
-    < Www-Authenticate: basic realm="${realm}"
+    < Www-Authenticate: basic realm="Restricted"
     < 
     * Connection #0 to host 127.0.0.1 left intact
    ```

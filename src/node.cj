@@ -172,7 +172,7 @@ public class Node {
             this.index.maxChar = this.nodes[this.nodes.size-1].part.toRuneArray()[0]
             let size = Int64(UInt32(this.index.maxChar) - UInt32(this.index.minChar)) + 1
             if (this.index.table.size != size) {
-                this.index.table = Array(size, item: 0)
+                this.index.table = Array(size, repeat: 0)
             } else {
                 for (i in 0..this.index.table.size) {
                     this.index.table[i] = 0

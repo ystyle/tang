@@ -1,37 +1,31 @@
-from tang import tang.*
-from tang import middleware.{logMiddleware, newBasicAuthMiddleware, withBasicAuthRealm}
-from net import http.Server, http.ResponseWriteStream, http.BasicAuth
+package basicauth
 
-func debugHandle(w:ResponseWriteStream, r:Request) {
-    plainString(w, "hello world!")
-}
+import tang.*
+import tang.middleware.{logMiddleware, newBasicAuthMiddleware, withBasicAuthRealm, BasicAuth}
+import net.http.{ServerBuilder, HttpRequest}
 
-func authUser (r:Request):Bool {
-    let basicAuth:?BasicAuth = r.request.basicAuth()
-    if (let Some(basic) = basicAuth) {
-        return basic.username == "test" && basic.password == "test"
-    } else {
-        return false
+func authUser(ctx: TangHttpContext): Bool {
+    if (let Some(userinfo) <- ctx.basicAuth()) {
+        return userinfo.username() == "test" && userinfo.password() == "test"
     }
-
+    return false
 }
 
 main() {
-    let r = Router([
-        use([
-            newBasicAuthMiddleware(authUser, [withBasicAuthRealm("test:test")]),
-            logMiddleware
-        ])
-    ])
-    r.group.withGroup("/api", {group =>
-        group.get("/user/current", {w, r => 
-            plainString(w, "hello world!")
-        })
-    })
-
-    // 构建并启动服务
-    println("listening on http://localhost:10000")
-    let srv = Server(r)
-    srv.port = 10000
-    srv.listenAndServe()
+    let r = Router(
+        use(
+            newBasicAuthMiddleware(authUser, [withBasicAuthRealm("Restricted")]),
+            logMiddleware,
+        )
+    )
+    let group = r.group("/api")
+    group.get(
+        "/user/current",
+        {
+            ctx => ctx.writeString("hello world!")
+        }
+    )
+    let server = ServerBuilder().distributor(r).addr("127.0.0.1").port(10000).build()
+    println("listening on http://localhost:${server.port}")
+    server.serve()
 }
