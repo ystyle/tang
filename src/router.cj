@@ -4,6 +4,7 @@ import std.sync.ReentrantMutex
 import net.http.{HttpContext, FuncHandler, RedirectHandler, NotFoundHandler, HttpRequestHandler, HttpRequestDistributor}
 import net.http.HttpStatusCode
 import encoding.url.URL
+import tang.log.getLogger
 
 public class Router <: HttpRequestDistributor {
     var config: Config
@@ -39,6 +40,7 @@ public class Router <: HttpRequestDistributor {
     // }
 
     public func register(path: String, handler: HttpRequestHandler): Unit {
+        getLogger().info("It is not recommended to use the register method to register the handler: ${path}")
         let fn: HandlerFunc = {
             ctx => handler.handle(ctx.context)
         }
