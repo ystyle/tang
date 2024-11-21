@@ -2,12 +2,13 @@ package tang
 
 import std.unittest.*
 import std.unittest.testmacro.*
+import std.collection.ArrayList
 
 struct CleanTest {
     CleanTest(let path:String, let result:String){}
 }
 
-var cleanTests = Array<CleanTest>([
+var cleanTests = ArrayList<CleanTest>(
     // Already clean
     CleanTest("/", "/"),
     CleanTest("/abc", "/abc"),
@@ -56,7 +57,7 @@ var cleanTests = Array<CleanTest>([
     CleanTest("abc/./../def", "/def"),
     CleanTest("abc//./../def", "/def"),
     CleanTest("abc/../../././../def", "/def")
-])
+)
 
 @Test
 func TestPathClean():Unit {

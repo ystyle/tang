@@ -1,5 +1,5 @@
 ### tang
->一个轻量级的web框架， 移植自[uptrace/bunrouter](https://github.com/uptrace/bunrouter)， 状态： 开发中[示例已经可使用-编译问题已经解决]
+>一个仓颉的轻量级的web框架， 初始版本移植自[uptrace/bunrouter](https://github.com/uptrace/bunrouter)， 状态： 开发中[api不稳定状态]
 
 ### 功能
 - 中间件[middleware]： 可以把常见操作从 HTTP handler提取到可重用函数中
@@ -15,7 +15,7 @@
 ```cj
 import tang.*
 import tang.middleware.{logMiddleware, exceptionMiddleware, requestid}
-import net.http.{ServerBuilder, HttpContext}
+import net.http.ServerBuilder
 import std.collection.HashMap
 
 func helloHandle(ctx: TangHttpContext): Unit {
@@ -58,8 +58,8 @@ main() {
     )
     // 通配符路由
     group.get("/user/*path", helloHandle)
+    
     // 构建并启动服务
-
     let server = ServerBuilder().distributor(r).addr("127.0.0.1").port(10000).build()
     println("listening on http://localhost:${server.port}")
     server.serve()

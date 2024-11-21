@@ -8,7 +8,7 @@ import std.convert.*
 import std.io.ByteBuffer
 import serialization.serialization.*
 import encoding.json.*
-import encoding.json.stream.{JsonSerializable, JsonWriter}
+import encoding.json.stream.{JsonSerializable, JsonDeserializable, JsonWriter, JsonReader}
 import encoding.base64.fromBase64String
 
 public type HandlerFunc = (TangHttpContext) -> Unit
@@ -91,9 +91,9 @@ public class TangHttpContext {
         let dm = DataModel.fromJson(jv)
         return T.deserialize(dm)
     }
-    public func bindQuery<T>(value: Box<T>) where T <: Serializable<T> {
-        let v: T = value.value
-        value.value = this.bindQuery(v)
+
+    public func jsonParser<T>(): ?T where T <: JsonDeserializable<T> {
+        return T.fromJson(JsonReader(this.request.body))
     }
     public func bindQuery<T>(value: T): T where T <: Serializable<T> {
         let dm = value.serialize()

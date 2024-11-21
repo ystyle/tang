@@ -1,5 +1,7 @@
 package tang
 
+import net.http.{HttpContext, FuncHandler}
+
 public class Config {
     var notFoundHandler:HandlerFunc
     var methodNotAllowedHandler:HandlerFunc
@@ -23,11 +25,11 @@ public func withMethodNotAllowedHandler(handler:HandlerFunc): OptionFunc {
 
 type GroupOptionFunc = (Config) -> Unit
 
-public func withGroup(fn:(Group)->Unit):GroupOptionFunc {
+func withGroup(fn:(Group)->Unit):GroupOptionFunc {
     return {c:Config => fn(c.group)}
 }
 
-public func withMiddleware(fns:Array<MiddlewareFunc>):GroupOptionFunc {
+func withMiddleware(fns:Array<MiddlewareFunc>):GroupOptionFunc {
     return {c => 
         for (fn in fns) {
             c.group.stack.append(fn)
@@ -49,4 +51,16 @@ public func withHandler(fn:HandlerFunc):GroupOptionFunc {
         }
         c.group.stack.append(md)
    }
+}
+
+public func withStdHandlr(fn:(HttpContext) -> Unit): HandlerFunc {
+    return {ctx => 
+        fn(ctx.context)
+    }
+}
+
+public func withStdFunHandlr(handler:FuncHandler): HandlerFunc {
+    return {ctx => 
+        handler.handle(ctx.context)
+    }
 }
