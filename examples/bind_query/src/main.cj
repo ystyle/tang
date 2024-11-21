@@ -1,7 +1,6 @@
 package bind_query
 
 import tang.*
-import tang.middleware.{logMiddleware, exceptionMiddleware}
 import net.http.{ServerBuilder}
 import serialization.serialization.*
 import std.collection.HashMap
@@ -25,9 +24,7 @@ class User <: Serializable<User> {
 
 main() {
     // 创建路由
-    let r = Router([use([exceptionMiddleware, // 放第一位，保证其它中间件也能正常执行
-        logMiddleware // 访问日志记录
-        ])])
+    let r = Router()
     // 创建分组
     let group = r.group("/api")
     // 绑定query参数
@@ -35,8 +32,7 @@ main() {
         "/user",
         {
             ctx =>
-            var query = User()
-            ctx.bindQuery(query)
+            let query = ctx.bindQuery(User())
             ctx.json(query)
         }
     )

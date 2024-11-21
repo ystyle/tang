@@ -1,15 +1,16 @@
 package tang
 
 import std.collection.{ArrayList, HashMap, HashSet}
-import net.http.{FuncHandler, HttpStatusCode, HttpContext, HttpRequest, HttpResponseBuilder}
+import net.http.{FuncHandler, HttpStatusCode, HttpContext, HttpRequest, HttpResponseBuilder, FileHandler, FileHandlerType}
 import encoding.url.{UserInfo, Form}
 import crypto.x509.X509Certificate
 import std.convert.*
-import std.io.ByteBuffer
+import std.io.{ByteBuffer, StringReader}
 import serialization.serialization.*
 import encoding.json.*
 import encoding.json.stream.{JsonSerializable, JsonDeserializable, JsonWriter, JsonReader}
 import encoding.base64.fromBase64String
+import std.fs.Path
 
 public type HandlerFunc = (TangHttpContext) -> Unit
 
@@ -25,6 +26,7 @@ public class TangHttpContext {
     var kv = HashMap<String, Any>()
     let context: HttpContext
     let _params: Params
+    var bodyraw: ?Array<Byte> = None
     init(context: HttpContext, params: Params) {
         this.context = context
         this._params = params
@@ -83,18 +85,28 @@ public class TangHttpContext {
         return ArrayList<String>(this.request.headers.get("X-Forwarded-For"))
     }
 
-    public func bindJSON<T>(): ?T where T <: Serializable<T> {
+    public func bodyRaw():Array<Byte> {
+        if (let Some(v) <- this.bodyraw) {
+            return v 
+        }
         var bs = Array<UInt8>(this.request.bodySize ?? 0, repeat: 0)
         this.request.body.read(bs)
-        let body = String.fromUtf8(bs)
+        this.bodyraw = bs
+        return bs
+    }
+
+    public func bindJson<T>(): ?T where T <: Serializable<T> {
+        let sr = StringReader(this.request.body)
+        let body = sr.readToEnd()
         var jv: JsonValue = JsonValue.fromStr(body)
         let dm = DataModel.fromJson(jv)
         return T.deserialize(dm)
     }
 
-    public func jsonParser<T>(): ?T where T <: JsonDeserializable<T> {
+    public func bindJsonStram<T>(): ?T where T <: JsonDeserializable<T> {
         return T.fromJson(JsonReader(this.request.body))
     }
+
     public func bindQuery<T>(value: T): T where T <: Serializable<T> {
         let dm = value.serialize()
         var dms = match (dm) {
@@ -151,7 +163,7 @@ public class TangHttpContext {
         return None
     }
 
-    public func parseQuery(): HashMap<String, Array<String>> {
+    public func queries(): HashMap<String, Array<String>> {
         let map = HashMap<String, Array<String>>()
         let queryOption = this.request.url.query
         if (let Some(query) <- queryOption) {
@@ -184,16 +196,46 @@ public class TangHttpContext {
         return map
     }
 
-    public func json<T>(value: T): Unit where T <: Serializable<T> {
-        this.jsonWithCode(HttpStatusCode.STATUS_OK, value)
+    public func query(key:String):?String {
+        return this.request.url.queryForm.get(key)
     }
-    public func json(value: JsonSerializable) {
+
+    public func queryBool(key:String):?Bool {
+        let v = this.request.url.queryForm.get(key)
+        if (let None <- v) {
+            return None
+        }
+        return Bool.tryParse(v??"")
+    }
+
+    public func queryFloat(key:String): ?Float64 {
+        let v = this.request.url.queryForm.get(key)
+        if (let None <- v) {
+            return None
+        }
+        return Float64.tryParse(v??"")
+    }
+
+    public func queryInt(key:String):?Int64 {
+        let v = this.request.url.queryForm.get(key)
+        if (let None <- v) {
+            return None
+        }
+        return Int64.tryParse(v??"")
+    }
+
+    public func json<T>(value: T): Unit where T <: Serializable<T> {
         this.jsonWithCode(HttpStatusCode.STATUS_OK, value)
     }
     public func jsonWithCode<T>(code: UInt16, value: T): Unit where T <: Serializable<T> {
         this.responseBuilder.status(code).body(value.serialize().toJson().toJsonString())
     }
-    public func jsonWithCode(code: UInt16, value: JsonSerializable) {
+
+    public func jsonStream<T>(value: T): Unit where T <: JsonSerializable  {
+        this.jsonStreamWithCode(HttpStatusCode.STATUS_OK, value)
+    }
+
+    public func jsonStreamWithCode<T>(code: UInt16, value: T): Unit where T <: JsonSerializable  {
         let stream = ByteBuffer() // output
         let writer = JsonWriter(stream) // init a JsonWriter
         value.toJson(writer)
@@ -205,6 +247,19 @@ public class TangHttpContext {
 
     public func writeStringWithCode<T>(code: UInt16, value: T): Unit where T <: ToString {
         this.responseBuilder.status(code).body(value.toString())
+    }
+
+    public func write(bs:Array<Byte>):Unit {
+        this.responseBuilder.body(bs)
+    }
+
+    public func download(path:Path):Unit {
+        let hf = FileHandler(path.toString(), handlerType:FileHandlerType.DownLoad)
+        hf.handle(this.context)
+    }
+
+    public func getHeader(key:String):?String {
+        return this.request.headers.getFirst(key)
     }
 }
 

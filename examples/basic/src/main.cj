@@ -1,7 +1,7 @@
 package basic
 
 import tang.*
-import tang.middleware.{logMiddleware, exceptionMiddleware, requestid}
+import tang.middleware.{log.logger, exception.exception, requestid.requestid}
 import net.http.{ServerBuilder, HttpContext}
 import std.collection.HashMap
 
@@ -13,8 +13,8 @@ main() {
     // 创建路由
     let r = Router(
         use(
-            exceptionMiddleware, // 放第一位，保证其它中间件也能正常执行
-            logMiddleware, // 访问日志记录
+            exception, // 放第一位，保证其它中间件也能正常执行
+            logger, // 访问日志记录
             requestid
         )
     )
@@ -27,14 +27,16 @@ main() {
     group.get(
         "/user/:id",
         {
-            ctx => ctx.responseBuilder.body("测试")
+            ctx => 
+            let id = ctx.param("id")
+            ctx.responseBuilder.body("current id: ${id}")
         }
     )
     // 静态路由
     group.get(
         "/user/current",
         {
-            ctx => ctx.responseBuilder.body("current user: haha")
+            ctx => ctx.responseBuilder.body("current user: ystyle")
         }
     )
     group.get(
@@ -44,7 +46,10 @@ main() {
         }
     )
     // 通配符路由
-    group.get("/user/*path", helloHandle)
+    group.get("/user/*path", {ctx => 
+       let path = ctx.param("path")
+       ctx.writeString("path: path")
+    })
     // 构建并启动服务
 
     let server = ServerBuilder().distributor(r).addr("127.0.0.1").port(10000).build()

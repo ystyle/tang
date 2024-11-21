@@ -1,7 +1,7 @@
 package basicauth
 
 import tang.*
-import tang.middleware.{logMiddleware, newBasicAuthMiddleware, withBasicAuthRealm, BasicAuth, exceptionMiddleware}
+import tang.middleware.{log.logger, exception.exception, basicauth.newBasicAuth}
 import net.http.{ServerBuilder, HttpRequest}
 
 func authUser(ctx: TangHttpContext): Bool {
@@ -14,9 +14,9 @@ func authUser(ctx: TangHttpContext): Bool {
 main() {
     let r = Router(
         use(
-            exceptionMiddleware
-            newBasicAuthMiddleware(authUser, [withBasicAuthRealm("Restricted")]),
-            logMiddleware,
+            exception,
+            newBasicAuth(authUser),
+            logger
         )
     )
     let group = r.group("/api")

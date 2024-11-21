@@ -1,15 +1,12 @@
 package path_params
 
 import tang.*
-import tang.middleware.{logMiddleware, exceptionMiddleware}
 import net.http.ServerBuilder
 import std.collection.HashMap
 
 main() {
     // 创建路由
-    let r = Router([use([exceptionMiddleware, // 放第一位，保证其它中间件也能正常执行
-        logMiddleware // 访问日志记录
-        ])])
+    let r = Router()
     // 创建分组
     let group = r.group("/api")
     // 获取路径参数

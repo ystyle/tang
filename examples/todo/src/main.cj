@@ -2,19 +2,21 @@ package todo
 
 import net.http.ServerBuilder
 import tang.*
-import tang.middleware.{logMiddleware, exceptionMiddleware}
-
+import tang.middleware.{log.logger, exception.exception, requestid.requestid}
 
 main() {
     // 创建路由
     let r = Router(
         use(
-            exceptionMiddleware, // 放第一位，保证其它中间件也能正常执行
-            logMiddleware // 访问日志记录
+            exception, // 放第一位，保证其它中间件也能正常执行
+            logger, // 访问日志记录
+            requestid // 请求id
         )
     )
+
     // 创建分组
     let group = r.group("/api")
+    
     // 获取指定id的todo
     group.get("/todo/:id", getOneTodo)
     // 获取所有的todoList

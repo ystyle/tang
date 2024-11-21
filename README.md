@@ -1,5 +1,5 @@
 ### tang
->一个仓颉的轻量级的web框架， 初始版本移植自[uptrace/bunrouter](https://github.com/uptrace/bunrouter)， 状态： 开发中[api不稳定状态]
+>一个仓颉的轻量级的web框架， 初始版本移植自[uptrace/bunrouter](https://github.com/uptrace/bunrouter)， 状态： 开发中[api不稳定, 不建议用于生产环境]
 
 ### 功能
 - 中间件[middleware]： 可以把常见操作从 HTTP handler提取到可重用函数中
@@ -73,3 +73,4 @@ main() {
 - [log](/src/middleware/log.cj): 日志打印
 - [basic auth](/src/middleware/basic_auth.cj): basic auth认证
 - [exception](/src/middleware/exception.cj): 异常恢复，错误日志打印，并返回500错误
+- [requestid](/src/middleware/requestid.cj): 

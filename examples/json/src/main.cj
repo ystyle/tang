@@ -1,7 +1,6 @@
 package json
 
 import tang.*
-import tang.middleware.logMiddleware
 import net.http.ServerBuilder
 import std.collection.HashMap
 import serialization.serialization.*
@@ -29,7 +28,7 @@ class User <: Serializable<User>  {
 
 main() {
     // 创建路由
-    let r = Router(use(logMiddleware))
+    let r = Router()
     // 创建分组
     let group = r.group("/api")
     // 静态路由

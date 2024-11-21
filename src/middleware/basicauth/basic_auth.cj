@@ -1,4 +1,4 @@
-package tang.middleware
+package tang.middleware.basicauth
 
 import net.http.{HttpRequest, HttpContext, HttpStatusCode}
 import tang.{MiddlewareFunc, HandlerFunc, TangHttpContext}
@@ -34,11 +34,11 @@ public class BasicAuth {
     }
 }
 
-public func newBasicAuthMiddleware(check: BasicAuthCheckFunc): MiddlewareFunc {
-    return newBasicAuthMiddleware(check, Array<WithBasicAuthRealmOption>())
+public func newBasicAuth(check: BasicAuthCheckFunc): MiddlewareFunc {
+    return newBasicAuth(check, Array<WithBasicAuthRealmOption>())
 }
 
-public func newBasicAuthMiddleware(check: BasicAuthCheckFunc, opts: Array<WithBasicAuthRealmOption>): MiddlewareFunc {
+public func newBasicAuth(check: BasicAuthCheckFunc, opts: Array<WithBasicAuthRealmOption>): MiddlewareFunc {
     let basic = BasicAuth("Restricted", check)
     for (opt in opts) {
         opt(basic)

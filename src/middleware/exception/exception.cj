@@ -1,9 +1,9 @@
-package tang.middleware
+package tang.middleware.exception
 
 import tang.{HandlerFunc}
 import tang.log.getLogger
 
-public func exceptionMiddleware(handler: HandlerFunc): HandlerFunc {
+public func exception(handler: HandlerFunc): HandlerFunc {
     return {
         ctx => try {
             handler(ctx)

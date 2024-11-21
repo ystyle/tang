@@ -11,5 +11,7 @@
   src-dir = "src"
   target-dir = ""
   version = "1.0.0"
-[package.package-configuration."tang.middleware"]
+[package.package-configuration."tang.middleware.requestid"]
+  compile-option = "-Woff unused"
+[package.package-configuration."tang.middleware.exception"]
   compile-option = "-Woff unused"

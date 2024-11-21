@@ -1,4 +1,4 @@
-package tang.middleware
+package tang.middleware.log
 
 import net.http.HttpContext
 import std.collection.ArrayList
@@ -13,7 +13,7 @@ public func addLogAttrsFn(fns: Array<TangLogAttrsFn>) {
     logFns.appendAll(fns)
 }
 
-public func logMiddleware(handler: HandlerFunc): HandlerFunc {
+public func logger(handler: HandlerFunc): HandlerFunc {
     let log = getLogger()
     return { ctx: TangHttpContext =>
         let t = DateTime.now()
