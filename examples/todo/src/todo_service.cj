@@ -40,7 +40,7 @@ class Result<T> <: Serializable<Result<T>> where T <: Serializable<T> {
         }
         let id = Int64.deserialize(dms.get("id"))
         let msg = Option<String>.deserialize(dms.get("msg"))
-        let data = Option<T>.deserialize(dms.get("msg"))
+        let data = Option<T>.deserialize(dms.get("data"))
         return Result<T>(id, msg, data)
     }
 }
