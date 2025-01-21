@@ -21,7 +21,7 @@ public func requestid(handler: HandlerFunc): HandlerFunc {
 
 func addRequestIDtoLog(ctx: TangHttpContext, attrs: ArrayList<(String, LogValue)>): Unit {
     if (let Some(v) <- ctx.kvGet<String>("requestid")) {
-        attrs.append(("requestid", v))
+        attrs.add(("requestid", v))
     }
 }
 

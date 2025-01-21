@@ -401,7 +401,7 @@ extend Form {
         let keys = HashSet<String>()
         for (key in pairs) {
             if (let Some(i) <- key.indexOf("=")) {
-                keys.put(key[0..i])
+                keys.add(key[0..i])
             }
         }
         return keys.toArray()

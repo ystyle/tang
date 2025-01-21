@@ -84,7 +84,7 @@ public class Node {
             }
         }
         let node = Node(part)
-        this.nodes.append(node)
+        this.nodes.add(node)
         return node
     }
 
@@ -243,12 +243,12 @@ func splitRoute(route:String):(ArrayList<String>, Option<HashMap<String, Int64>>
         match (firstChar) {
             case ':' => 
                 p.finalizePart(true)
-                p.parts.append(":")
-                params.append(segment[1..])
+                p.parts.add(":")
+                params.add(segment[1..])
             case '*' =>
                 p.finalizePart(true)
-                p.parts.append("*")
-                params.append(segment[1..])
+                p.parts.add("*")
+                params.add(segment[1..])
             case _ =>
                 p.accumulate(segment)
         }
@@ -269,7 +269,7 @@ func paramMap(route:String, params:ArrayList<String>):HashMap<String, Int64> {
         if (param == "") {
             throw Exception("param must have a name: " + route)
         }
-        m.put(param, i)
+        m.add(param, i)
         i ++
     }
     return m
@@ -294,16 +294,16 @@ class RouteParser {
         return s
     }
     func accumulate(s:String) {
-        this.acc.append(s)
+        this.acc.add(s)
     }
     func finalizePart(withSlash:Bool) {
         let part = join(this.acc, withSlash)
         if (let Some(v) <-part) {
-            this.parts.append(v)
+            this.parts.add(v)
         }
         this.acc.clear()
         if (this.valid()) {
-            this.acc.append("")
+            this.acc.add("")
         }
     }
 }

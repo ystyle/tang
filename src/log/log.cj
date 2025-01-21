@@ -40,7 +40,7 @@ public func getLogger(attrs: Array<(String, LogValue)>):Logger {
     }
     logger.level = defaultconfig.defaultLogLevel
     let a =  ArrayList<(String, LogValue)>()
-    a.append(("Application", "Tang"))
-    a.appendAll(attrs)
+    a.add(("Application", "Tang"))
+    a.add(all:attrs)
     return logger.withAttrs(a.toArray())
 }

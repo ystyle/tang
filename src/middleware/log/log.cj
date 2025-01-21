@@ -10,7 +10,7 @@ public type TangLogAttrsFn  = (ctx: TangHttpContext, attrs: ArrayList<(String, L
 let logFns = ArrayList<TangLogAttrsFn>()
 
 public func addLogAttrsFn(fns: Array<TangLogAttrsFn>) {
-    logFns.appendAll(fns)
+    logFns.add(all:fns)
 }
 
 public func logger(handler: HandlerFunc): HandlerFunc {
@@ -27,7 +27,7 @@ public func logger(handler: HandlerFunc): HandlerFunc {
             for (fn in logFns) {
                 fn(ctx, attr)
             }
-            attr.appendAll([("method", method), ("path", url.path), ("latency", "${ts}"), ("status", "${code}")])
+            attr.add(all:[("method", method), ("path", url.path), ("latency", "${ts}"), ("status", "${code}")])
             log.info("vist", attr.toArray())
         }
         return

@@ -1,0 +1,4 @@
+version = 0
+
+[requires]
+  sonyflake = {branch = "master", commitId = "d638e884c38cad7897b80a6e95a734b535788ea9", git = "https://github.com/ystyle/cj-sonyflake"}

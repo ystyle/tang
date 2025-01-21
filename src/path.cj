@@ -15,7 +15,7 @@ public func cleanPath(pa:String):String {
     var w = 1
     if (p[0] != r'/') {
         r = 0
-        buff.append(r'/')
+        buff.add(r'/')
     }
     var trailing = n > 1 && p[n-1] == r'/'
     while (r < n) {
@@ -68,13 +68,13 @@ func bufApp(buf:ArrayList<Rune>, s:String, w:Int64, c:Rune):Unit{
             return
         }
         println(1)
-        buf.appendAll(s[..w].toRuneArray())
+        buf.add(all:s[..w].toRuneArray())
         println(2)
     }
     if (buf.size > w) {
-        buf.remove(w)
-        buf.insert(w, c)
+        buf.remove(at:w)
+        buf.add(c, at: w)
     } else {
-        buf.append(c)
+        buf.add(c)
     }
 }

@@ -11,13 +11,13 @@ public class Group {
     init(router:Router, path:String, stack:Array<MiddlewareFunc>) {
         this.router = router
         this.path = path
-        this.stack.appendAll(stack)
+        this.stack.add(all:stack)
     }
 
     init(path:String, stack!:Array<MiddlewareFunc> = []) {
         this.router = None
         this.path = path
-        this.stack.appendAll(stack)
+        this.stack.add(all:stack)
     }
     init() {
         this.router = None
@@ -38,7 +38,7 @@ public class Group {
     }
 
     public func use (middlewares:Array<MiddlewareFunc>):Group {
-        this.stack.appendAll(middlewares)
+        this.stack.add(all:middlewares)
         return this
     }
 

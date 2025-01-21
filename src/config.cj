@@ -32,7 +32,7 @@ func withGroup(fn:(Group)->Unit):GroupOptionFunc {
 func withMiddleware(fns:Array<MiddlewareFunc>):GroupOptionFunc {
     return {c => 
         for (fn in fns) {
-            c.group.stack.append(fn)
+            c.group.stack.add(fn)
         }
     }
 }
@@ -49,7 +49,7 @@ public func withHandler(fn:HandlerFunc):GroupOptionFunc {
                 return next(ctx)
             }
         }
-        c.group.stack.append(md)
+        c.group.stack.add(md)
    }
 }
 
