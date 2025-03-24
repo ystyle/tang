@@ -1,6 +1,7 @@
 package tang
 
 import std.collection.{ HashMap, ArrayList }
+import std.sort.sort
 
 public class Node {
     var route:String = ""
@@ -160,7 +161,7 @@ public class Node {
 
     public func indexNodes():Unit {
         if (this.nodes.size > 0) {
-            this.nodes.sortBy(stable: true, comparator:  {n1, n2 =>
+            sort<Node>(this.nodes, by: {n1, n2 =>
                 if (n1.part[0] < n2.part[0]) {
                     return Ordering.LT
                 } else if (n1.part[0] > n2.part[0]) {

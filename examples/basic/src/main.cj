@@ -4,6 +4,7 @@ import tang.*
 import tang.middleware.{log.logger, exception.exception, requestid.requestid}
 import net.http.{ServerBuilder, HttpContext}
 import std.collection.HashMap
+import log.LogLevel
 
 func helloHandle(ctx: TangHttpContext): Unit {
     ctx.writeString("hello world!")
@@ -42,17 +43,18 @@ main() {
     group.get(
         "/user/exception",
         {
-            ctx => throw Exception("出现异常啦！")
+            _ => throw Exception("出现异常啦！")
         }
     )
     // 通配符路由
     group.get("/user/*path", {ctx => 
-       let path = ctx.param("path")
-       ctx.writeString("path: path")
+       let mypath = ctx.param("path")
+       ctx.writeString("path: ${mypath}")
     })
     // 构建并启动服务
 
     let server = ServerBuilder().distributor(r).addr("127.0.0.1").port(10000).build()
+    server.logger.level = LogLevel.ERROR
     println("listening on http://localhost:${server.port}")
     server.serve()
 }

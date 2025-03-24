@@ -8,7 +8,7 @@ struct CleanTest {
     CleanTest(let path:String, let result:String){}
 }
 
-var cleanTests = ArrayList<CleanTest>(
+var cleanTests = ArrayList<CleanTest>([
     // Already clean
     CleanTest("/", "/"),
     CleanTest("/abc", "/abc"),
@@ -57,8 +57,9 @@ var cleanTests = ArrayList<CleanTest>(
     CleanTest("abc/./../def", "/def"),
     CleanTest("abc//./../def", "/def"),
     CleanTest("abc/../../././../def", "/def")
-)
+])
 
+@Tag[path]
 @Test
 func TestPathClean():Unit {
     for (test in cleanTests) {
@@ -71,4 +72,11 @@ func TestPathClean():Unit {
             throw Exception("Clean(${test.result}) = ${s2}, want ${test.result}")
         }
     }
+}
+
+
+@Bench[500000]
+@Test
+func testBenchCleanPath(): Unit { 
+    cleanPath("abc/./../def")
 }

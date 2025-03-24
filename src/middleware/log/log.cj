@@ -20,16 +20,17 @@ public func logger(handler: HandlerFunc): HandlerFunc {
         let url = ctx.request.url
         let method = ctx.request.method
         handler(ctx)
-        spawn {
-            let attr = ArrayList<(String, LogValue)>()
-            let ts = DateTime.now() - t
-            let code = ctx.responseBuilder.build().status
-            for (fn in logFns) {
-                fn(ctx, attr)
-            }
-            attr.add(all:[("method", method), ("path", url.path), ("latency", "${ts}"), ("status", "${code}")])
-            log.info("vist", attr.toArray())
+        let attr = ArrayList<(String, LogValue)>()
+        let ts = DateTime.now() - t
+        let code = ctx.responseBuilder.build().status
+        for (fn in logFns) {
+            fn(ctx, attr)
         }
+        var l = log.withAttrs([("method", method), ("path", url.path), ("latency", "${ts}"), ("status", "${code}")])
+        if (attr.size > 0) {
+            l = l.withAttrs(attr.toArray())
+        }
+        l.info("vist")
         return
     }
 }

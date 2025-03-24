@@ -1,7 +1,6 @@
 package tang
 
 import std.collection.ArrayList
-import std.reflect.TypeInfo
 
 public class Group {
     var router:?Router

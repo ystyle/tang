@@ -7,7 +7,6 @@ import crypto.x509.X509Certificate
 import std.convert.*
 import std.io.{ByteBuffer, StringReader}
 import serialization.serialization.*
-import encoding.json.*
 import encoding.json.stream.{JsonSerializable, JsonDeserializable, JsonWriter, JsonReader}
 import encoding.base64.fromBase64String
 import std.fs.Path
@@ -95,15 +94,7 @@ public class TangHttpContext {
         return bs
     }
 
-    public func bindJson<T>(): ?T where T <: Serializable<T> {
-        let sr = StringReader(this.request.body)
-        let body = sr.readToEnd()
-        var jv: JsonValue = JsonValue.fromStr(body)
-        let dm = DataModel.fromJson(jv)
-        return T.deserialize(dm)
-    }
-
-    public func bindJsonStram<T>(): ?T where T <: JsonDeserializable<T> {
+    public func bindJson<T>(): ?T where T <: JsonDeserializable<T> {
         return T.fromJson(JsonReader(this.request.body))
     }
 
@@ -224,20 +215,13 @@ public class TangHttpContext {
         return Int64.tryParse(v??"")
     }
 
-    public func json<T>(value: T): Unit where T <: Serializable<T> {
+    public func json<T>(value: T): Unit where T <: JsonSerializable  {
         this.jsonWithCode(HttpStatusCode.STATUS_OK, value)
     }
-    public func jsonWithCode<T>(code: UInt16, value: T): Unit where T <: Serializable<T> {
-        this.responseBuilder.status(code).body(value.serialize().toJson().toJsonString())
-    }
 
-    public func jsonStream<T>(value: T): Unit where T <: JsonSerializable  {
-        this.jsonStreamWithCode(HttpStatusCode.STATUS_OK, value)
-    }
-
-    public func jsonStreamWithCode<T>(code: UInt16, value: T): Unit where T <: JsonSerializable  {
-        let stream = ByteBuffer() // output
-        let writer = JsonWriter(stream) // init a JsonWriter
+    public func jsonWithCode<T>(code: UInt16, value: T): Unit where T <: JsonSerializable  {
+        let stream = ByteBuffer()
+        let writer = JsonWriter(stream)
         value.toJson(writer)
         this.responseBuilder.status(code).body(stream)
     }
