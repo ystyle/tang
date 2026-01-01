@@ -1,10 +1,10 @@
 package basic
 
-import tang.*
-import tang.middleware.{log.logger, exception.exception, requestid.requestid}
-import net.http.{ServerBuilder, HttpContext}
 import std.collection.HashMap
-import log.LogLevel
+import stdx.log.LogLevel
+import tang.middleware.{log.logger, exception.exception, requestid.requestid}
+import stdx.net.http.{ServerBuilder, HttpContext}
+import tang.*
 
 func helloHandle(ctx: TangHttpContext): Unit {
     ctx.writeString("hello world!")
@@ -24,15 +24,13 @@ main() {
 
     // 创建分组
     let group = r.group("/api")
-    // 命名路由
-    group.get(
-        "/user/:id",
-        {
-            ctx => 
-            let id = ctx.param("id")
-            ctx.responseBuilder.body("current id: ${id}")
-        }
-    )
+    
+    group.post("/user/create", {ctx =>
+        let name = ctx.fromValue("username")
+        ctx.responseBuilder.body(name ?? "null")
+    })
+
+    
     // 静态路由
     group.get(
         "/user/current",
@@ -46,8 +44,19 @@ main() {
             _ => throw Exception("出现异常啦！")
         }
     )
+    
+    // 命名路由
+    group.get(
+        "/user/:id",
+        {
+            ctx => 
+            let id = ctx.param("id")
+            ctx.responseBuilder.body("current id: ${id}")
+        }
+    )
+
     // 通配符路由
-    group.get("/user/*path", {ctx => 
+    group.get("/user_file/*path", {ctx => 
        let mypath = ctx.param("path")
        ctx.writeString("path: ${mypath}")
     })

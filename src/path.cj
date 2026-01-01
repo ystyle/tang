@@ -1,6 +1,5 @@
 package tang
 
-import std.io.{StringReader, StringWriter}
 import std.collection.ArrayList
 
 public func cleanPath(pa:String):String {

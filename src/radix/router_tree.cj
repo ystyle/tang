@@ -18,6 +18,7 @@ public class MethodHandlers {
     var patch: ?RouteHandler = None
     var head: ?RouteHandler = None
     var options: ?RouteHandler = None
+    var all: ?RouteHandler = None  // 匹配所有 HTTP 方法
 
     func set(method: String, handler: RouteHandler): Unit {
         match (method) {
@@ -28,6 +29,7 @@ public class MethodHandlers {
             case "PATCH" => this.patch = Some(handler)
             case "HEAD" => this.head = Some(handler)
             case "OPTIONS" => this.options = Some(handler)
+            case "*" => this.all = Some(handler)  // 注册到所有方法
             case _ => throw Exception("method: ${method} no support")
         }
     }
@@ -43,6 +45,14 @@ public class MethodHandlers {
             case "OPTIONS" => this.options
             case _ => None
         }
+    }
+
+    /// 获取处理器，优先返回具体方法，如果不存在则返回 all
+    func getWithFallBack(method: String): ?RouteHandler {
+        if (let Some(h) <- this.get(method)) {
+            return Some(h)
+        }
+        return this.all
     }
 }
 
@@ -175,7 +185,7 @@ public class RouteNode {
     public func searchRoute(method: String, path: String): (?RouteNode, RouteParams) {
         // 处理根路径
         if (path == "/" || path.isEmpty()) {
-            if (let Some(_) <- this.handlers.get(method)) {
+            if (let Some(_) <- this.handlers.getWithFallBack(method)) {
                 return (Some(this), RouteParams())
             }
             return (None, RouteParams())
@@ -207,7 +217,7 @@ public class RouteNode {
                         if (segment == child.prefix) {
                             // 最后一个段
                             if (i == segments.size - 1) {
-                                if (let Some(_) <- child.handlers.get(method)) {
+                                if (let Some(_) <- child.handlers.getWithFallBack(method)) {
                                     return (Some(child), params)
                                 }
                             } else {
@@ -233,7 +243,7 @@ public class RouteNode {
                     let paramName = paramChild.prefix
                     params.add(paramName, segment)
 
-                    if (let Some(_) <- paramChild.handlers.get(method)) {
+                    if (let Some(_) <- paramChild.handlers.getWithFallBack(method)) {
                         return (Some(paramChild), params)
                     }
                 }
@@ -244,7 +254,7 @@ public class RouteNode {
                     let remainingPath = String.join(segments[i..], delimiter: "/")
                     params.add(paramName, remainingPath)
 
-                    if (let Some(_) <- wcChild.handlers.get(method)) {
+                    if (let Some(_) <- wcChild.handlers.getWithFallBack(method)) {
                         return (Some(wcChild), params)
                     }
                 }
@@ -257,7 +267,7 @@ public class RouteNode {
                     let paramName = wcChild.prefix
                     params.add(paramName, segment)
 
-                    if (let Some(_) <- wcChild.handlers.get(method)) {
+                    if (let Some(_) <- wcChild.handlers.getWithFallBack(method)) {
                         return (Some(wcChild), params)
                     }
                 }

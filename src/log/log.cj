@@ -1,10 +1,9 @@
 package tang.log
 
-import log.{getGlobalLogger, setGlobalLogger, LogLevel, LogValue, Logger}
 import std.io.{BufferedOutputStream, OutputStream}
-import logger.{JsonLogger , TextLogger }
 import std.env.getStdOut
-import std.collection.ArrayList
+import stdx.log.{ LogLevel, LogValue, Logger}
+import stdx.logger.{JsonLogger , TextLogger }
 
 public enum LogType {
     Json | Text
@@ -33,10 +32,9 @@ public func setLogConfig(config:TangLogerConfig) {
 }
 
 public func getLogger(attrs: Array<(String, LogValue)>):Logger {
-    var logger:Logger
-    match (defaultconfig.defaultLogType) {
-        case Json =>  logger = JsonLogger(defaultconfig.output)
-        case Text => logger = TextLogger(defaultconfig.output)
+    let logger:Logger = match (defaultconfig.defaultLogType) {
+        case Json => JsonLogger(defaultconfig.output)
+        case Text => TextLogger(defaultconfig.output)
     }
     logger.level = defaultconfig.defaultLogLevel
     return logger.withAttrs(("Application", "Tang")).withAttrs(attrs)

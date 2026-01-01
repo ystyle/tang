@@ -1,14 +1,14 @@
 package todo
 
-import serialization.serialization.*
-import std.collection.{ArrayList, HashMap}
 import std.convert.*
+import std.collection.{ArrayList, HashMap}
+import stdx.encoding.json.stream.*
 import tang.*
 
 // 存储todo
 let todoList = ArrayList<Todo>([Todo(1, "cangjie"), Todo(2, "tang")])
 
-class Result<T> <: Serializable<Result<T>> where T <: Serializable<T> {
+class Result<T> <: JsonSerializable where T <: JsonSerializable {
     let code:Int64
     let msg:?String
     let data:?T
@@ -27,43 +27,60 @@ class Result<T> <: Serializable<Result<T>> where T <: Serializable<T> {
         this.data = data
         this.msg = msg
     }
-    public func serialize(): DataModel {
-        return DataModelStruct()
-        .add(field<Int64>("code", this.code))
-        .add(field<Option<String>>("msg", this.msg))
-        .add(field<Option<T>>("data", this.data))
-    }
-    public static func deserialize(dm: DataModel): Result<T> {
-        var dms = match (dm) {
-            case data: DataModelStruct => data
-            case _ => throw Exception("this data is not DataModelStruct")
-        }
-        let id = Int64.deserialize(dms.get("id"))
-        let msg = Option<String>.deserialize(dms.get("msg"))
-        let data = Option<T>.deserialize(dms.get("data"))
-        return Result<T>(id, msg, data)
+    public func toJson(w: JsonWriter): Unit {
+        w.startObject()
+        w.writeName("code").writeValue(this.code)
+        w.writeName("msg").writeValue(this.msg)
+        w.writeName("data").writeValue(this.data)
+        w.endObject()
     }
 }
 
 // todo 结构
-class Todo <: Serializable<Todo> {
-    let id: Int64
+class Todo <: JsonDeserializable<Todo> & JsonSerializable {
+    var id: Int64
     var content: String
     init(id: Int64, content: String) {
         this.id = id
         this.content = content
     }
-    public func serialize(): DataModel {
-        return DataModelStruct().add(field<Int64>("id", this.id)).add(field<String>("content", this.content))
+    public func toJson(w: JsonWriter): Unit {
+        w.startObject()
+        w.writeName("id").writeValue(this.id)
+        w.writeName("content").writeValue(this.content)
+        w.endObject()
     }
-    public static func deserialize(dm: DataModel): Todo {
-        var dms = match (dm) {
-            case data: DataModelStruct => data
-            case _ => throw Exception("this data is not DataModelStruct")
+
+    public static func fromJson(r: JsonReader): Todo {
+        let res = Todo(0, "")
+        fromJsonObject(
+            r,
+            [
+                ("id", {=> res.id = r.readValue<Int64>()}),
+                ("content", {=> res.content = r.readValue<String>()})
+            ])
+        return res
+    }
+}
+
+func fromJsonObject(r: JsonReader, list: Array<(String, () -> Unit)>) {
+    let refs = HashMap<String, () -> Unit>(list)
+    while (let Some(v) <- r.peek()) {
+        match (v) {
+            case BeginObject =>
+                r.startObject()
+                while (r.peek() != EndObject) {
+                    let n = r.readName()
+                    if (refs.contains(n)) {
+                        refs[n]()
+                    } else {
+                        r.skip()
+                    }
+                }
+                r.endObject()
+                break
+            case _ => throw Exception()
         }
-        let content = String.deserialize(dms.get("content"))
-        let id = Int64.deserialize(dms.get("id"))
-        return Todo(id, content)
     }
 }
 
@@ -83,7 +100,7 @@ func createTodo(ctx: TangHttpContext) {
     if (let Some(t) <- m) {
         let content = t["content"]
         let todo = Todo(todoList.size + 1, content)
-        todoList.append(todo)
+        todoList.add(todo)
         ctx.json(Result(1, todo))
     } else {
         ctx.json(Result<Todo>(-1,"请求参数错误"))

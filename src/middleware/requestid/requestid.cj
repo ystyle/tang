@@ -2,7 +2,7 @@ package tang.middleware.requestid
 
 import std.time.DateTime
 import std.collection.ArrayList
-import log.LogValue
+import stdx.log.LogValue
 import tang.{HandlerFunc, TangHttpContext}
 import tang.middleware.log.addLogAttrsFn
 import sonyflake.*

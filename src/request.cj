@@ -1,15 +1,17 @@
 package tang
 
-import std.collection.{ArrayList, HashMap, HashSet}
-import net.http.{FuncHandler, HttpStatusCode, HttpContext, HttpRequest, HttpResponseBuilder, FileHandler, FileHandlerType}
-import encoding.url.{UserInfo, Form}
-import crypto.x509.X509Certificate
-import std.convert.*
-import std.io.{ByteBuffer, StringReader}
-import serialization.serialization.*
-import encoding.json.stream.{JsonSerializable, JsonDeserializable, JsonWriter, JsonReader}
-import encoding.base64.fromBase64String
 import std.fs.Path
+import std.convert.*
+import std.collection.{ArrayList, HashMap, HashSet}
+import std.io.{ByteBuffer, InputStream}
+import stdx.net.http.{FuncHandler, HttpStatusCode, HttpContext, HttpRequest, HttpResponseBuilder, FileHandler, FileHandlerType}
+import stdx.encoding.url.{UserInfo, Form}
+import stdx.crypto.x509.X509Certificate
+import stdx.serialization.serialization.*
+import stdx.encoding.json.stream.{JsonSerializable, JsonDeserializable, JsonWriter, JsonReader}
+import stdx.encoding.base64.fromBase64String
+import multipart.*
+import tang.radix.RouteParams
 
 public type HandlerFunc = (TangHttpContext) -> Unit
 
@@ -26,6 +28,9 @@ public class TangHttpContext {
     let context: HttpContext
     let _params: Params
     var bodyraw: ?Array<Byte> = None
+    var _multipartForm: ?MulitpartForm = None
+    var _multipartFormBoundary:?String = None
+
     init(context: HttpContext, params: Params) {
         this.context = context
         this._params = params
@@ -187,6 +192,56 @@ public class TangHttpContext {
         return map
     }
 
+    public func contentType():?String {
+        return this.getHeader("Content-Type")
+    }
+
+    public func multipartFormBoundary():?String {
+        let contentTypeOpt = this.contentType()
+        let contentType = if(contentTypeOpt.isNone()) {
+            return None
+        } else {
+            contentTypeOpt.getOrThrow()
+        }
+        if (!contentType.startsWith("multipart/form-data")) {
+            return None
+        }
+        return contentType.trimStart("multipart/form-data; boundary=")
+    }
+
+    public func multipartForm(): ?MulitpartForm {
+        if (this._multipartForm.isSome()) {
+            return this._multipartForm
+        }
+        this._multipartFormBoundary = this.multipartFormBoundary()
+        if (let None <- this._multipartFormBoundary) {
+            throw Exception("request Content-Type has bad boundary or is not multipart/form-data")
+        }
+        let multipartFormBoundary = this._multipartFormBoundary ?? ""
+        let mr = MulitpartReader(this.request.body, multipartFormBoundary.toArray())
+        this._multipartForm = mr.form
+        return this._multipartForm
+    }
+
+    public func fromValue(key:String, defaultvalue!:?String = None):?String {
+        let formopt = this.multipartForm()
+        if (formopt.isNone()) {
+            return None
+        }
+        let form = formopt.getOrThrow()
+        let v = form.values.get(key)
+        return v?[0] ?? defaultvalue
+    }
+
+    public func fromFile(key:String):?MultipartFile {
+        let formopt = this.multipartForm()
+        if (formopt.isNone()) {
+            return None
+        }
+        let form = formopt.getOrThrow()
+        return form.files.get(key)?[0]
+    }
+
     public func query(key:String):?String {
         return this.request.url.queryForm.get(key)
     }
@@ -221,9 +276,11 @@ public class TangHttpContext {
 
     public func jsonWithCode<T>(code: UInt16, value: T): Unit where T <: JsonSerializable  {
         let stream = ByteBuffer()
+        this.responseBuilder.status(code).body(stream)
         let writer = JsonWriter(stream)
         value.toJson(writer)
-        this.responseBuilder.status(code).body(stream)
+        writer.flush()
+        stream.flush()
     }
     public func writeString<T>(value: T): Unit where T <: ToString {
         this.writeStringWithCode(HttpStatusCode.STATUS_OK, value)
@@ -252,45 +309,30 @@ public class Param {
 }
 
 public class Params {
-    var path: String
-    var node: ?Node
-    var wildcardLen: UInt16
+    var values: HashMap<String, String> = HashMap<String, String>()
+
     public init() {
-        this.path = ""
-        this.node = None
-        this.wildcardLen = 0
     }
-    public init(path: String, node: Node, wildcardLen: UInt16) {
-        this.path = path
-        this.node = node
-        this.wildcardLen = wildcardLen
+
+    public init(routeParams: RouteParams) {
+        routeParams.forEach({ key, value =>
+            this.values[key] = value
+        })
     }
 
     public func isZero(): Bool {
-        match (this.node) {
-            case None => true
-            case Some(_) => false
-        }
+        return this.values.size == 0
     }
 
     public func route(): ?String {
-        match (this.node) {
-            case None => None
-            case Some(n) => n.route
-        }
+        return None
     }
 
     public func get(name: String): ?String {
-        match (this.node) {
-            case None => None
-            case Some(n) =>
-                if (n.params.contains(name)) {
-                    let i = n.params[name]
-                    this.findParam(i)
-                } else {
-                    None
-                }
+        if (this.values.contains(name)) {
+            return Some(this.values[name])
         }
+        return None
     }
 
     public func byName(name: String): String {
@@ -305,76 +347,8 @@ public class Params {
         return None
     }
 
-    func findParam(paramIndex: Int64): ?String {
-        var path = this.path
-        var pathLen = this.path.size
-        var currNode = this.node
-        var params = this.node?.params
-        var currParamIndex = (params?.size ?? 0) - 1
-        if (let Some(n) <- this.node) {
-            if (n.isWC) {
-                if (currParamIndex == paramIndex) {
-                    pathLen -= Int64(this.wildcardLen)
-                    return path[pathLen..]
-                }
-                currParamIndex--
-                pathLen -= Int64(this.wildcardLen)
-                path = path[..pathLen]
-            }
-        }
-
-        while (true) {
-            match (currNode) {
-                case None => break
-                case Some(n) =>
-                    if (n.part.toRuneArray()[0] != r':') {
-                        pathLen -= n.part.size
-                        path = path[..pathLen]
-                        currNode = n.parent
-                        continue
-                    }
-                    let i = path.lastIndexOf('/')
-                    if (let Some(v) <- i) {
-                        pathLen = v + 1
-                    } else {
-                        return None
-                    }
-
-                    if (currParamIndex == paramIndex) {
-                        println(path)
-                        return path[pathLen..]
-                    }
-                    currParamIndex--
-                    path = path[..pathLen]
-                    currNode = n.parent
-            }
-        }
-        return None
-    }
-
     public func map(): HashMap<String, String> {
-        let m = HashMap<String, String>()
-        if (let Some(n) <- this.node) {
-            for ((param, v) in n.params) {
-                let value = this.findParam(v)
-                if (let Some(vl) <- value) {
-                    m[param] = vl
-                }
-            }
-        }
-        return m
-    }
-    public func slice(): Array<?Param> {
-        var list = Array<?Param>()
-        if (let Some(n) <- this.node) {
-            list = Array<?Param>(n.params.size, repeat: None)
-            for ((k, v) in n.params) {
-                if (let Some(value) <- this.findParam(v)) {
-                    list[v] = Param(k, value)
-                }
-            }
-        }
-        return list
+        return this.values
     }
 }
 
@@ -391,3 +365,4 @@ extend Form {
         return keys.toArray()
     }
 }
+

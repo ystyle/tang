@@ -101,6 +101,11 @@ public class Group {
     public func options (path:String, handler:HandlerFunc) {
         this.handle("OPTIONS", path, handler)
     }
+
+    /// 匹配所有 HTTP 方法
+    public func all (path:String, handler:HandlerFunc) {
+        this.handle("*", path, handler)
+    }
 }
 
 func joinPath(base:String, path:String):String {

@@ -1,6 +1,7 @@
 package todo
 
-import net.http.ServerBuilder
+import stdx.log.LogLevel
+import stdx.net.http.ServerBuilder
 import tang.*
 import tang.middleware.{log.logger, exception.exception, requestid.requestid}
 
@@ -30,6 +31,7 @@ main() {
 
     // 构建并启动服务
     let server = ServerBuilder().distributor(r).addr("127.0.0.1").port(10000).build()
+    server.logger.level = LogLevel.ERROR
     println("listening on http://localhost:${server.port}")
     server.serve()
 }

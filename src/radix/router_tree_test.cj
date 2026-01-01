@@ -251,4 +251,36 @@ class TestRouteNode {
             @Fail("path3 should be Some")
         }
     }
+
+    @TestCase
+    func testAllMethodRoute(): Unit {
+        let root = RouteNode("")
+
+        // 注册一个匹配所有方法的路由
+        root.insertRoute("*", "/health", { _ => () })
+
+        // 应该匹配所有 HTTP 方法
+        let methods = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"]
+
+        for (method in methods) {
+            let (node, _) = root.searchRoute(method, "/health")
+            if (let None <- node) {
+                @Fail("node should be Some for method ${method}")
+            }
+        }
+
+        // 测试优先级：具体方法应该优先于 all
+        root.insertRoute("GET", "/status", { _ => () })
+        root.insertRoute("*", "/status", { _ => () })
+
+        let (node1, _) = root.searchRoute("GET", "/status")
+        if (let None <- node1) {
+            @Fail("node1 should be Some for GET /status")
+        }
+
+        let (node2, _) = root.searchRoute("POST", "/status")
+        if (let None <- node2) {
+            @Fail("node2 should be Some for POST /status")
+        }
+    }
 }

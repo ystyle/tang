@@ -1,9 +1,9 @@
 package json
 
-import tang.*
-import net.http.ServerBuilder
 import std.collection.HashMap
-import serialization.serialization.*
+import stdx.net.http.ServerBuilder
+import stdx.serialization.serialization.*
+import tang.*
 
 class User <: Serializable<User>  {
     let id:Int64

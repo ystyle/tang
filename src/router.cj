@@ -64,9 +64,20 @@ public class Router <: HttpRequestDistributor {
         if (let Some(n) <- node) {
             // 找到了路由节点，使用节点的 pattern 来查找 HandlerFunc
             let pattern = n.pattern
-            let key = "${ctx.request.method.toString()}:${pattern}"
+            let method = ctx.request.method.toString()
+            let key = "${method}:${pattern}"
+
+            // 优先查找具体方法
             if (this.handlers.contains(key)) {
                 let handler = this.handlers[key]
+                let params = Params(radixParams)
+                return (handler, params)
+            }
+
+            // 如果没找到，尝试查找 all() 方法（通配符 *）
+            let allKey = "*:${pattern}"
+            if (this.handlers.contains(allKey)) {
+                let handler = this.handlers[allKey]
                 let params = Params(radixParams)
                 return (handler, params)
             }
@@ -129,6 +140,11 @@ public class Router <: HttpRequestDistributor {
     public func options (path:String, handler:HandlerFunc) {
         this._group.handle("OPTIONS", path, handler)
     }
+
+    /// 匹配所有 HTTP 方法
+    public func all (path:String, handler:HandlerFunc) {
+        this._group.handle("*", path, handler)
+    }
 }
 
 func redirectHandler(newPath: String): HandlerFunc {
@@ -145,5 +161,4 @@ func defaultMethodNotAllowedHandler(ctx: TangHttpContext): Unit {
 
 func defaultNoFoundHandler(ctx: TangHttpContext): Unit {
     NotFoundHandler().handle(ctx.context)
-    ctx.responseBuilder.build().status
 }
