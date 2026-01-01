@@ -1,32 +1,20 @@
 package tang.middleware.requestid
 
-import std.time.DateTime
-import std.collection.ArrayList
-import stdx.log.LogValue
 import tang.{HandlerFunc, TangHttpContext}
-import tang.middleware.log.addLogAttrsFn
 import sonyflake.*
 
 let gen = Sonyflake(Setting(1))
-let _ = addLogAttrsFn(addRequestIDtoLog)
 
+/// 请求 ID 中间件
+/// 为每个请求生成唯一的 ID，存储到 ctx.kv 中
+/// 可通过 ctx.requestid() 获取
 public func requestid(handler: HandlerFunc): HandlerFunc {
     return {
         ctx =>
         let id = gen.NextID()
-        ctx.kvSet("requestid", "${id}")
+        let idStr = "${id}"
+        ctx.kvSet("requestid", idStr)
+        ctx.responseBuilder.header("X-Request-ID", idStr)
         handler(ctx)
-    }
-}
-
-func addRequestIDtoLog(ctx: TangHttpContext, attrs: ArrayList<(String, LogValue)>): Unit {
-    if (let Some(v) <- ctx.kvGet<String>("requestid")) {
-        attrs.add(("requestid", v))
-    }
-}
-
-extend TangHttpContext {
-    public func requestid():?String {
-        return this.kvGet<String>("requestid")
     }
 }

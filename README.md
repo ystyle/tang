@@ -20,8 +20,8 @@
 ### 示例
 ```cj
 import tang.*
-import tang.middleware.{log.logger, exception.exception, requestid.requestid}
-import net.http.{ServerBuilder, HttpContext}
+import tang.middleware.{accesslog.logger, exception.exception, requestid.requestid}
+import stdx.net.http.ServerBuilder
 import std.collection.HashMap
 
 func helloHandle(ctx: TangHttpContext): Unit {
@@ -148,11 +148,82 @@ r.get("/user/*path", { ... })        // 通配符路由
 master 当前配置0.59.6, 配置过的仓颉版本已用分支归档, 以仓颉版本号为分支名称.
 
 
+### 部署
+
+生产环境部署建议请查看 [部署文档](docs/deployment.md)，包括：
+- Gzip 压缩配置
+- 反向代理配置
+- 性能优化建议
+- 安全配置建议
+
 ### 更多示例
 更多示例请查看 [examples](/examples/) 目录
 
 ### 中间件
-- [log](/src/middleware/log.cj): 日志打印
-- [basic auth](/src/middleware/basic_auth.cj): basic auth认证
-- [exception](/src/middleware/exception.cj): 异常恢复，错误日志打印，并返回500错误
-- [requestid](/src/middleware/requestid.cj): 在请求设置请求id的中间件
+
+#### 内置中间件
+
+Tang 提供以下中间件：
+
+- **[accesslog](/src/middleware/accesslog/)**: HTTP 访问日志记录
+  - 记录请求方法、路径、延迟、状态码
+  - 自动集成 requestid（如果启用）
+  - 支持结构化日志输出
+
+- **[requestid](/src/middleware/requestid/)**: 请求 ID 生成
+  - 为每个请求生成唯一 ID（使用 Sonyflake 算法）
+  - 存储到 Context 的 KV 存储中
+  - 其他中间件可通过 `ctx.requestid()` 访问
+
+- **[exception](/src/middleware/exception/)**: 全局异常处理
+  - 捕获未处理的异常
+  - 记录错误日志
+  - 返回 500 错误响应
+
+- **[basicauth](/src/middleware/basicauth/)**: HTTP Basic 认证
+  - 标准的 Basic 认证支持
+  - 可自定义认证逻辑
+  - 支持 realm 配置
+
+- **[cors](/src/middleware/cors/)**: CORS 跨域支持
+  - 支持自定义允许的来源、方法、头
+  - 支持预检请求（OPTIONS）
+  - 支持凭证模式
+
+- **[security](/src/middleware/security/)**: 安全响应头
+  - 提供常见安全响应头（X-Frame-Options, X-Content-Type-Options 等）
+  - 支持预设安全策略
+  - 可自定义安全头
+
+> **💡 提示**：Gzip 压缩推荐在 Nginx 或反向代理层配置，参见 [部署建议](docs/deployment.md)
+
+#### Context 扩展机制
+
+Tang 使用仓颉的**同包直接扩展**机制提供便捷的 Context 方法：
+
+```cj
+// src/context_extensions.cj
+extend TangHttpContext {
+    public func requestid(): ?String {
+        return this.kvGet<String>("requestid")
+    }
+}
+```
+
+**扩展规则：**
+- 同包扩展自动导出，无需导入接口
+- 中间件通过 `ctx.kvSet(key, value)` 存储数据
+- 其他中间件通过扩展方法（如 `ctx.requestid()`）访问数据
+- 企业级框架可在自己的包中使用接口扩展 TangHttpContext
+
+**中间件通信示例：**
+```cj
+// requestid 中间件存储数据
+ctx.kvSet("requestid", "${id}")
+
+// accesslog 中间件读取数据
+let rid = ctx.requestid()
+if (let Some(v) <- rid) {
+    attrs.add(("requestid", v))
+}
+```

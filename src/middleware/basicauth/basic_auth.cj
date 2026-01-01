@@ -19,17 +19,15 @@ public class BasicAuth {
             ctx: TangHttpContext =>
             let ok = this.check(ctx)
             if (ok) {
-                next(ctx)
+                if (!ctx.isAborted()) {
+                    next(ctx)
+                }
             } else {
-                this.basicAuth(ctx)
+                // 认证失败，中止请求处理
+                ctx.abortWithStatus(HttpStatusCode.STATUS_UNAUTHORIZED, body: "Unauthorized\n")
+                ctx.responseBuilder.header("WWW-Authenticate", "basic realm=\"${this.realm}\"")
             }
         }
-    }
-    func basicAuth(ctx: TangHttpContext): Unit {
-        ctx
-            .responseBuilder
-            .status(HttpStatusCode.STATUS_UNAUTHORIZED)
-            .header("WWW-Authenticate", "basic realm=${this.realm}")
     }
 }
 

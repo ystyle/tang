@@ -2,12 +2,12 @@
 一个仓颉的轻量级的web框架， 初始版本移植自[uptrace/bunrouter]， 后来context按fiber ctx的api 风格做了修改
 
 # 项目操作
-**重要**: 执行cd和grep需要使用zsh
 
 ```shell
 cjpm clean # 清除构建缓存
 cjpm build # 构建
 cjpm run   # 运行项目
+./target/release/bin/main #手动运行
 ```
 
 # 关于仓颉语法和API
@@ -294,6 +294,12 @@ type FnType = (Int64) -> Unit
 func display(a: Int64): Unit {
     println(a)
 }
+
+// 命名参数:
+func name(name!:string)
+
+// 命名参数还可以设置默认值
+func name(name!:String = "小王")
 ```
 
 ### ⚠️ 函数参数（重要）
@@ -390,6 +396,7 @@ enum RGBColor {
 ### match 表达式
 
 #### 基本语法
+⚠️ **case**：不需要{}括号
 
 ```cj
 match (待匹配值) {

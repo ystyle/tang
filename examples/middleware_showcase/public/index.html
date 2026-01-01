@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Tang - 静态文件服务</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        h1 { color: #333; }
+        .middleware-list { background: #f5f5f5; padding: 20px; border-radius: 5px; }
+        .middleware-list ul { list-style-type: none; padding: 0; }
+        .middleware-list li { padding: 10px; margin: 5px 0; background: white; border-left: 4px solid #4CAF50; }
+        .note { background: #fff3cd; padding: 15px; border-radius: 5px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🎉 Tang 静态文件服务测试成功！</h1>
+    <p>如果你能看到这个页面，说明静态文件中间件正在正常工作。</p>
+    
+    <div class="middleware-list">
+        <h2>已启用的中间件：</h2>
+        <ul>
+            <li>✓ Recovery - 异常恢复</li>
+            <li>✓ Access Log - 访问日志</li>
+            <li>✓ Request ID - 请求追踪</li>
+            <li>✓ CORS - 跨域支持</li>
+            <li>✓ Security - 安全头</li>
+            <li>✓ Static File - 静态文件服务</li>
+        </ul>
+    </div>
+
+    <div class="note">
+        <strong>注意</strong>：Gzip 压缩推荐在 Nginx 或反向代理层配置。
+    </div>
+
+    <p><strong>文件路径</strong>: public/index.html</p>
+    <p><strong>访问时间</strong>: <script>document.write(new Date().toLocaleString('zh-CN'))</script></p>
+</body>
+</html>

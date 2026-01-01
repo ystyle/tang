@@ -1,5 +1,0 @@
-version = 0
-
-[requires]
-  multipart = {branch = "0.1.2", commitId = "774e96d1fd14316adff1fce0eb73c858cea6153b", git = "https://gitcode.com/Cangjie-SIG/multipart"}
-  sonyflake = {branch = "master", commitId = "d638e884c38cad7897b80a6e95a734b535788ea9", git = "https://github.com/ystyle/cj-sonyflake"}

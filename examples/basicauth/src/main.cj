@@ -1,7 +1,7 @@
 package basicauth
 
 import tang.*
-import tang.middleware.{log.logger, exception.exception, basicauth.newBasicAuth}
+import tang.middleware.{accesslog.logger, exception.exception, basicauth.newBasicAuth}
 import stdx.net.http.{ServerBuilder, HttpRequest}
 
 func authUser(ctx: TangHttpContext): Bool {

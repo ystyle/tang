@@ -7,3 +7,5 @@ module-resolve.json
 target
 .cache
 *.cj.macrocall
+*.log
+*.pid

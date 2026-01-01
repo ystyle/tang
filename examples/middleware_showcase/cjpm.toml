@@ -3,10 +3,10 @@ tang = { path = "../../" }
 
 [package]
 cjc-version = "0.59.6"
-compile-option = "--static"
-description = "nothing here"
+compile-option = ""
+description = "Tang 中间件功能展示示例"
 link-option = ""
-name = "basic"
+name = "middleware_showcase"
 output-type = "executable"
 src-dir = "src"
 target-dir = ""

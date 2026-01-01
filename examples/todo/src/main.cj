@@ -3,7 +3,7 @@ package todo
 import stdx.log.LogLevel
 import stdx.net.http.ServerBuilder
 import tang.*
-import tang.middleware.{log.logger, exception.exception, requestid.requestid}
+import tang.middleware.{accesslog.logger, exception.exception, requestid.requestid}
 
 main() {
     // 创建路由

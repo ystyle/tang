@@ -58,13 +58,23 @@ public class Router <: HttpRequestDistributor {
             path = ctx.request.url.path
         }
 
+        let method = ctx.request.method.toString()
+
         // 使用 radix tree 查找
-        let (node, radixParams) = this.tree.searchRoute(ctx.request.method.toString(), path)
+        var (node, radixParams) = this.tree.searchRoute(method, path)
+
+        // HEAD 请求回退到 GET（HTTP 标准行为）
+        if (let None <- node && method == "HEAD") {
+            let (getNode, getParams) = this.tree.searchRoute("GET", path)
+            if (let Some(n) <- getNode) {
+                node = Some(n)
+                radixParams = getParams
+            }
+        }
 
         if (let Some(n) <- node) {
             // 找到了路由节点，使用节点的 pattern 来查找 HandlerFunc
             let pattern = n.pattern
-            let method = ctx.request.method.toString()
             let key = "${method}:${pattern}"
 
             // 优先查找具体方法
@@ -81,6 +91,16 @@ public class Router <: HttpRequestDistributor {
                 let params = Params(radixParams)
                 return (handler, params)
             }
+
+            // HEAD 请求回退到 GET 处理器
+            if (method == "HEAD") {
+                let getKey = "GET:${pattern}"
+                if (this.handlers.contains(getKey)) {
+                    let handler = this.handlers[getKey]
+                    let params = Params(radixParams)
+                    return (handler, params)
+                }
+            }
         }
 
         // 没找到
@@ -88,6 +108,7 @@ public class Router <: HttpRequestDistributor {
         if (let Some(fn) <- redir) {
             return (fn, Params())
         }
+
         let fn = this.config.notFoundHandler
         return (fn, Params())
     }

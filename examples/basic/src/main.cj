@@ -2,7 +2,7 @@ package basic
 
 import std.collection.HashMap
 import stdx.log.LogLevel
-import tang.middleware.{log.logger, exception.exception, requestid.requestid}
+import tang.middleware.{exception.newRecovery, accesslog.accesslog, requestid.requestid}
 import stdx.net.http.{ServerBuilder, HttpContext}
 import tang.*
 
@@ -14,8 +14,8 @@ main() {
     // 创建路由
     let r = Router(
         use(
-            exception, // 放第一位，保证其它中间件也能正常执行
-            logger, // 访问日志记录
+            newRecovery(),// 放第一位，保证其它中间件也能正常执行
+            accesslog(), // 访问日志记录
             requestid
         )
     )
