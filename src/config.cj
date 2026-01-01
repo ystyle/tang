@@ -1,6 +1,6 @@
 package tang
 
-import net.http.{HttpContext, FuncHandler}
+import stdx.net.http.{HttpContext, FuncHandler}
 
 public class Config {
     var notFoundHandler:HandlerFunc

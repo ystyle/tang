@@ -1,21 +1,25 @@
 package tang
 
-import std.sync.ReentrantMutex
-import net.http.{HttpContext, FuncHandler, RedirectHandler, NotFoundHandler, HttpRequestHandler, HttpRequestDistributor}
-import net.http.HttpStatusCode
-import encoding.url.URL
+import std.sync.Mutex
+import std.collection.HashMap
+import stdx.net.http.{HttpContext, FuncHandler, RedirectHandler, NotFoundHandler, HttpRequestHandler, HttpRequestDistributor}
+import stdx.net.http.HttpStatusCode
+import stdx.encoding.url.URL
 import tang.log.getLogger
+import tang.radix.{RouteNode}
 
 public class Router <: HttpRequestDistributor {
     var config: Config
     var _group: Group
-    let tree: Node
-    let mu: ReentrantMutex = ReentrantMutex()
+    let tree: RouteNode
+    let mu: Mutex = Mutex()
+    var handlers: HashMap<String, HandlerFunc> = HashMap<String, HandlerFunc>()
+    var patterns: HashMap<String, String> = HashMap<String, String>()  // 存储从实际路径到pattern的映射
 
     public init() {
         println("\tTang Web Frameworks")
         println("method\t|\tpath")
-        this.tree = Node("/", "/")
+        this.tree = RouteNode("")
         this._group = Group()
         this.config = Config(this._group)
         this._group.router = this
@@ -29,28 +33,8 @@ public class Router <: HttpRequestDistributor {
         }
     }
 
-    // public func handle(ctx: HttpContext): Unit {
-    //     this.serveHTTPError(ctx)
-    // }
-
-    // public func serveHTTPError(ctx: HttpContext): Unit {
-    //     let (handler, params) = this.lookup(ctx)
-    //     let rr = Request(ctx.request, params)
-    //     handler(ctx)
-    // }
-
-    public func register(path: String, handler: HttpRequestHandler): Unit {
+    public func register(path: String, _: HttpRequestHandler): Unit {
         getLogger().info("It is not recommended to use the register method to register the handler: ${path}")
-        let fn: HandlerFunc = {
-            ctx => handler.handle(ctx.context)
-        }
-        this._group.get(path, fn)
-        this._group.post(path, fn)
-        this._group.put(path, fn)
-        this._group.delete(path, fn)
-        this._group.patch(path, fn)
-        this._group.head(path, fn)
-        this._group.options(path, fn)
     }
 
     public func distribute(_: String): HttpRequestHandler {
@@ -73,29 +57,28 @@ public class Router <: HttpRequestDistributor {
         if (path == "") {
             path = ctx.request.url.path
         }
-        let (node, handler, wildcardLen) = this.tree.findRoute(ctx.request.method.toString(), path)
 
-        if (let None <- node) {
-            // no found
-            let redir = this.redir(ctx.request.method.toString(), path)
-            if (let Some(fn) <- redir) {
-                return (fn, Params())
+        // 使用 radix tree 查找
+        let (node, radixParams) = this.tree.searchRoute(ctx.request.method.toString(), path)
+
+        if (let Some(n) <- node) {
+            // 找到了路由节点，使用节点的 pattern 来查找 HandlerFunc
+            let pattern = n.pattern
+            let key = "${ctx.request.method.toString()}:${pattern}"
+            if (this.handlers.contains(key)) {
+                let handler = this.handlers[key]
+                let params = Params(radixParams)
+                return (handler, params)
             }
-            let fn = this.config.notFoundHandler
+        }
+
+        // 没找到
+        let redir = this.redir(ctx.request.method.toString(), path)
+        if (let Some(fn) <- redir) {
             return (fn, Params())
         }
-        var n = node.getOrThrow()
-        var handlerfn: HandlerFunc
-        if (let None <- handler) {
-            let redir = this.redir(ctx.request.method.toString(), path)
-            if (let Some(fn) <- redir) {
-                return (fn, Params())
-            }
-            handlerfn = n.handleMap.notAllowed.getOrThrow()
-        } else {
-            handlerfn = handler.getOrThrow()
-        }
-        return (handlerfn, Params(path, n, wildcardLen))
+        let fn = this.config.notFoundHandler
+        return (fn, Params())
     }
 
     func redir(method: String, path: String): ?HandlerFunc {
@@ -104,21 +87,21 @@ public class Router <: HttpRequestDistributor {
         }
         var cleanPath = cleanPath(path)
         if (cleanPath != path) {
-            let (_, handler, _) = this.tree.findRoute(method, cleanPath)
-            if (let Some(fn) <- handler) {
+            let (node, _) = this.tree.searchRoute(method, cleanPath)
+            if (let Some(_) <- node) {
                 return redirectHandler(cleanPath)
             }
         }
         if (path.startsWith("/")) {
             let cleanPath = path[..path.size - 1]
-            let (_, handler, _) = this.tree.findRoute(method, cleanPath)
-            if (let Some(fn) <- handler) {
+            let (node, _) = this.tree.searchRoute(method, cleanPath)
+            if (let Some(_) <- node) {
                 return redirectHandler(cleanPath)
             }
         }
         cleanPath = path + "/"
-        let (_, handler, _) = this.tree.findRoute(method, cleanPath)
-        if (let Some(fn) <- handler) {
+        let (node, _) = this.tree.searchRoute(method, cleanPath)
+        if (let Some(_) <- node) {
             return redirectHandler(cleanPath)
         }
         return None

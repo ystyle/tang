@@ -2,14 +2,17 @@
 tang = {path = "../../", version = "1.0.0"}
 
 [package]
-  cjc-version = "0.56.4"
+  cjc-version = "0.59.6"
   compile-option = ""
   description = "nothing here"
   link-option = ""
   name = "basicauth"
   output-type = "executable"
   override-compile-option = ""
-  src-dir = ""
+  src-dir = "src"
   target-dir = ""
   version = "1.0.0"
   package-configuration = {}
+
+[target.x86_64-unknown-linux-gnu.bin-dependencies]
+path-option = [ "${CANGJIE_STDX_PATH}" ]

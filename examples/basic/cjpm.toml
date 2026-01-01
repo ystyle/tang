@@ -12,3 +12,6 @@ src-dir = "src"
 target-dir = ""
 version = "1.0.0"
 package-configuration = {}
+
+[target.x86_64-unknown-linux-gnu.bin-dependencies]
+path-option = [ "${CANGJIE_STDX_PATH}" ]

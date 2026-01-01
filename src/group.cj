@@ -1,6 +1,7 @@
 package tang
 
 import std.collection.ArrayList
+import tang.radix.{RouteHandler, RouteParams}
 
 public class Group {
     var router:?Router
@@ -40,13 +41,7 @@ public class Group {
         this.stack.add(all:middlewares)
         return this
     }
-
-    // public func withMiddleware(middleware:MiddlewareFunc):Group {
-    //     return this.group("", opts: [withMiddleware([middleware])])
-    // }
-    // public func withGroup(path:String, fn: (Group) -> Unit) {
-    //     fn(this.newGroup(path))
-    // }
+    
     public func handle(meth:String, path:String, handler:HandlerFunc) {
         if (let Some(r) <- this.router) {
             synchronized(r.mu) {
@@ -56,16 +51,18 @@ public class Group {
                     throw Exception("path can't be empty")
                 }
                 println("${meth}\t|\t${p}")
-                let tree = this.router?.tree
-                let node =  tree?.addRoute(p)
-                if (let Some(n) <- node) {
-                    n.setHandler(meth, this.wrap(handler))
-                    if (let None <- n.handleMap.notAllowed) {
-                        let config = this.router?.config
-                        if (let Some(fn) <- config?.methodNotAllowedHandler) {
-                            n.handleMap.notAllowed = this.wrap(fn)
-                        }
-                    }
+
+                // 使用 radix tree 注册路由
+                let wrappedHandler = this.wrap(handler)
+                let radixHandler: RouteHandler = { _: RouteParams => () }
+                if (let Some(r) <- this.router) {
+                    r.tree.insertRoute(meth, p, radixHandler)
+                }
+
+                // 存储 HandlerFunc 到 Router 的 handlers 映射中
+                let key = "${meth}:${p}"
+                if (let Some(router) <- this.router) {
+                    router.handlers[key] = wrappedHandler
                 }
             }
         }
@@ -73,8 +70,11 @@ public class Group {
 
     func wrap(handler:HandlerFunc):HandlerFunc {
         var wrapHandle = handler
-        for (st in this.stack) {
+        var i = 0
+        while (i < this.stack.size) {
+            let st = this.stack[this.stack.size -1 - i]
             wrapHandle = st(wrapHandle)
+            i++
         }
         return wrapHandle
     }

@@ -1,14 +1,15 @@
-### tang
->一个仓颉的轻量级的web框架， 初始版本移植自[uptrace/bunrouter](https://github.com/uptrace/bunrouter)， 状态： 开发中[api不稳定, 不建议用于生产环境]
+### Tang
+> 一个仓颉的轻量级 Web 框架，初始版本移植自 [uptrace/bunrouter](https://github.com/uptrace/bunrouter)
+>
+> **状态**：开发中（API 不稳定，不建议用于生产环境）
 
-### 功能
-- 中间件[middleware]： 可以把常见操作从 HTTP handler提取到可重用函数中
-- 支持路由优先级： 静态路径 > 命名路径 > 通配符路径
-- 支持路由分组
-- 支持使用class返回json
-- 支持绑定query参数到class
-- 支持绑定json body到class
-- 支持获取路径命名参数和通配符路径参数
+### 特性
+- **Radix Tree 路由**：基于基数树的高效路由实现，支持复杂路由规则
+- **路由优先级**：静态路径 > 命名参数 > 通配符，智能匹配
+- **路由分组**：支持分组路由，便于组织 API
+- **中间件系统**：可复用的中间件机制
+- **参数绑定**：支持 query 参数和 JSON body 绑定到 class
+- **JSON 响应**：支持直接使用 class 返回 JSON
 
 ### 安装依赖
 ```toml
@@ -64,9 +65,9 @@ main() {
         }
     )
     // 通配符路由
-    group.get("/user/*path", {ctx => 
+    group.get("/user/*path", {ctx =>
        let path = ctx.param("path")
-       ctx.writeString("path: path")
+       ctx.writeString("path: ${path}")
     })
     // 构建并启动服务
 
@@ -75,6 +76,73 @@ main() {
     server.serve()
 }
 ```
+
+### 路由规则
+
+Tang 使用 Radix Tree（基数树）实现高效路由匹配，支持以下路由类型：
+
+#### 1. 静态路由
+精确匹配的路径，优先级最高：
+```cj
+r.get("/user/current", { ctx => ... })
+r.get("/api/users", { ctx => ... })
+```
+
+#### 2. 命名参数路由
+使用 `:name` 语法捕获路径参数：
+```cj
+r.get("/user/:id", { ctx =>
+    let id = ctx.param("id")  // 获取参数值
+    // ...
+})
+```
+匹配示例：
+- `/user/123` → `id = "123"`
+- `/user/abc` → `id = "abc"`
+
+#### 3. 通配符路由
+使用 `*name` 语法捕获剩余所有路径：
+```cj
+r.get("/files/*path", { ctx =>
+    let path = ctx.param("path")  // 获取剩余路径
+    // ...
+})
+```
+匹配示例：
+- `/files/docs/file.txt` → `path = "docs/file.txt"`
+- `/files/a/b/c` → `path = "a/b/c"`
+
+#### 4. 路由优先级
+
+当多个路由可能匹配同一路径时，按以下优先级选择：
+
+1. **静态路由**（最高）
+   - `/user/current` 优先于 `/user/:id`
+
+2. **命名参数路由**
+   - 单段路径（如 `/user/123`）优先匹配参数路由
+
+3. **通配符路由**（最低）
+   - 多段路径（如 `/user/files/docs`）匹配通配符路由
+
+示例：
+```cj
+// 假设注册了以下路由
+r.get("/user/current", { ... })      // 静态路由
+r.get("/user/:id", { ... })          // 参数路由
+r.get("/user/*path", { ... })        // 通配符路由
+
+// 匹配结果：
+// /user/current  → 静态路由（优先级最高）
+// /user/123      → 参数路由（单段路径）
+// /user/a/b      → 通配符路由（多段路径）
+```
+
+#### 5. 性能特性
+
+- **时间复杂度**：O(k)，其中 k 为路径长度
+- **空间优化**：Radix Tree 自动压缩公共前缀
+- **快速查找**：树形结构，避免线性遍历
 
 ### 仓颉版本支持情况
 master 当前配置0.59.6, 配置过的仓颉版本已用分支归档, 以仓颉版本号为分支名称.
