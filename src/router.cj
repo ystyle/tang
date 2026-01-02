@@ -86,17 +86,15 @@ public class Router <: HttpRequestDistributor {
             let pattern = n.pattern
             let key = "${method}:${pattern}"
 
-            // 优先查找具体方法
-            if (this.handlers.contains(key)) {
-                let handler = this.handlers[key]
+            // 优先查找具体方法（使用一次 get 查询）
+            if (let Some(handler) <- this.handlers.get(key)) {
                 let params = Params(radixParams)
                 return (handler, params)
             }
 
             // 如果没找到，尝试查找 all() 方法（通配符 *）
             let allKey = "*:${pattern}"
-            if (this.handlers.contains(allKey)) {
-                let handler = this.handlers[allKey]
+            if (let Some(handler) <- this.handlers.get(allKey)) {
                 let params = Params(radixParams)
                 return (handler, params)
             }
@@ -104,8 +102,7 @@ public class Router <: HttpRequestDistributor {
             // HEAD 请求回退到 GET 处理器
             if (method == "HEAD") {
                 let getKey = "GET:${pattern}"
-                if (this.handlers.contains(getKey)) {
-                    let handler = this.handlers[getKey]
+                if (let Some(handler) <- this.handlers.get(getKey)) {
                     let params = Params(radixParams)
                     return (handler, params)
                 }

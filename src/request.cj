@@ -24,7 +24,7 @@ public func httpHandlerFunc(handle: FuncHandler): HandlerFunc {
 }
 
 public class TangHttpContext {
-    var kv = HashMap<String, Any>()
+    var kv: ?HashMap<String, Any> = None  // 延迟初始化，减少 GC 压力
     let context: HttpContext
     let _params: Params
     var bodyraw: ?Array<Byte> = None
@@ -51,16 +51,24 @@ public class TangHttpContext {
         }
     }
     public func kvGet<T>(key: String): ?T {
-        let v = this.kv.get(key)
-        if (let None <- v) {
-            return None
+        if (let Some(map) <- this.kv) {
+            let v = map.get(key)
+            if (let None <- v) {
+                return None
+            }
+            let vv = v.getOrThrow()
+            return vv as T
         }
-        let vv = v.getOrThrow()
-        return vv as T
+        return None
     }
 
     public func kvSet(key: String, value: Any): Unit {
-        this.kv[key] = value
+        if (let None <- this.kv) {
+            this.kv = HashMap<String, Any>()
+        }
+        if (let Some(map) <- this.kv) {
+            map[key] = value
+        }
     }
     public func param(key: String): String {
         return this._params.byName(key)
