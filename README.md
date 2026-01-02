@@ -20,6 +20,15 @@
 tang = { git = "https://github.com/ystyle/tang", branch = "master" }
 ```
 
+### ⚙️ 环境配置
+
+**本分支适配仓颉 1.0.0 版本**，需要设置 `stdx` 依赖的环境变量：
+
+```bash
+# 需要换成自己的 stdx 路径
+export CANGJIE_STDX_PATH=${HOME}/.config/cjvs/stdx/1.0.0/linux_x86_64_llvm/dynamic/stdx
+```
+
 ## 🚀 快速开始
 
 ### Hello World

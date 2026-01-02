@@ -35,6 +35,27 @@ cjpm init
 cjpm update
 ```
 
+### ⚙️ 配置 stdx 环境变量
+
+**本框架适配仓颉 1.0.0 版本**，在使用前需要设置 `stdx` 依赖的环境变量：
+
+```bash
+# 设置 stdx 路径（请根据实际安装位置调整）
+export CANGJIE_STDX_PATH=${HOME}/.config/cjvs/stdx/1.0.0/linux_x86_64_llvm/dynamic/stdx
+```
+
+**建议**：将此环境变量添加到 shell 配置文件中，使其永久生效：
+
+```bash
+# 对于 bash 用户
+echo 'export CANGJIE_STDX_PATH=${HOME}/.config/cjvs/stdx/1.0.0/linux_x86_64_llvm/dynamic/stdx' >> ~/.bashrc
+source ~/.bashrc
+
+# 对于 zsh 用户
+echo 'export CANGJIE_STDX_PATH=${HOME}/.config/cjvs/stdx/1.0.0/linux_x86_64_llvm/dynamic/stdx' >> ~/.zshrc
+source ~/.zshrc
+```
+
 > **💡 提示：依赖管理**
 >
 > 仓颉使用 `cjpm` (Cangjie Package Manager) 管理项目依赖：
