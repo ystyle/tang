@@ -141,11 +141,6 @@ default ✓ [======================================] 1000 VUs  5m0s
 
 
 
-
-running (5m02.0s), 0000/1000 VUs, 30455863 complete and 0 interrupted iterations
-default ✓ [======================================] 1000 VUs  5m0s
-
-
 ## 这个是Tang轻量级web框架
 ❯ k6 run scripts/k6.js
 
@@ -187,4 +182,9 @@ default ✓ [======================================] 1000 VUs  5m0s
     NETWORK
     data_received..................: 4.1 GB   14 MB/s
     data_sent......................: 2.8 GB   9.2 MB/s
+
+
+
+running (5m00.0s), 0000/1000 VUs, 32298665 complete and 0 interrupted iterations
+default ✓ [======================================] 1000 VUs  5m0s
 ```
