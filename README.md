@@ -18,6 +18,8 @@
 ```toml
 [dependencies]
 tang = { git = "https://github.com/ystyle/tang", branch = "master" }
+# 国内可以使用gitcode
+tang = { git = "https://gitcode.com/ystyle/tang", branch = "master" }
 ```
 
 ### ⚙️ 环境配置

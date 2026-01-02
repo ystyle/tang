@@ -60,8 +60,9 @@
 确保你已经安装了仓颉 SDK 和 stdx。
 
 ```bash
-# 克隆仓库
+# 克隆仓库（国内可以使用 gitcode）
 git clone https://github.com/ystyle/tang.git
+# 或者使用 gitcode：git clone https://gitcode.com/ystyle/tang.git
 cd tang
 
 # 构建项目

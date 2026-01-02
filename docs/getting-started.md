@@ -27,6 +27,8 @@ cjpm init
 ```toml
 [dependencies]
   tang = { git = "https://github.com/ystyle/tang.git", branch = "master" }
+  # 国内可以使用 gitcode
+  tang = { git = "https://gitcode.com/ystyle/tang.git", branch = "master" }
 ```
 
 然后安装依赖：
@@ -67,9 +69,13 @@ source ~/.zshrc
 > ```toml
 > # 使用特定分支
 > tang = { git = "https://github.com/ystyle/tang.git", branch = "master" }
+> # 国内可以使用 gitcode
+> tang = { git = "https://gitcode.com/ystyle/tang.git", branch = "master" }
 >
 > # 使用特定版本标签
 > tang = { git = "https://github.com/ystyle/tang.git", tag = "v1.0.0" }
+> # 国内可以使用 gitcode
+> tang = { git = "https://gitcode.com/ystyle/tang.git", tag = "v1.0.0" }
 > ```
 
 ## 📝 第二步：编写 Hello World
