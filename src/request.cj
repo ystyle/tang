@@ -30,6 +30,8 @@ public class TangHttpContext {
     var bodyraw: ?Array<Byte> = None
     var _multipartForm: ?MulitpartForm = None
     var _multipartFormBoundary:?String = None
+    var _requestId: ?String = None  // 独立的 requestId 字段，避免使用 HashMap
+    var _csrfToken: ?String = None  // 独立的 csrfToken 字段，避免使用 HashMap
 
     init(context: HttpContext, params: Params) {
         this.context = context

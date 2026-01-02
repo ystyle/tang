@@ -282,9 +282,9 @@ public func csrf(opts: Array<CSRFOption>): MiddlewareFunc {
                         config.errorHandler(ctx)
                 }
             } else {
-                // 安全的方法，生成 token 并存储到 context
+                // 安全的方法，生成 token 并直接存储到 _csrfToken 字段（避免使用 HashMap）
                 let token = config.generateToken(ctx)
-                ctx.kvSet("csrf_token", token)
+                ctx._csrfToken = Some(token)
                 next(ctx)
             }
         }

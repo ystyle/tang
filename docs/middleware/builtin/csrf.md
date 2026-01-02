@@ -40,7 +40,7 @@ r.use(csrf([
 
 // 1. 提供 Token 的端点
 r.get("/api/csrf/token", { ctx =>
-    let token = ctx.kvGet<String>("csrf_token").getOrThrow()
+    let token = ctx.csrfToken().getOrThrow()
     ctx.json(HashMap<String, String>([
             ("token", token)
         ]))
@@ -77,7 +77,7 @@ r.use(csrf([
 ]))
 
 r.get("/api/csrf/token", { ctx =>
-    let token = ctx.kvGet<String>("csrf_token").getOrThrow()
+    let token = ctx.csrfToken().getOrThrow()
     ctx.json(HashMap<String, String>([
             ("headerName", "X-CSRF-Token")
         ]))
@@ -142,7 +142,7 @@ main() {
 
     // 获取 Token
     r.get("/csrf/token", { ctx =>
-        let token = ctx.kvGet<String>("csrf_token").getOrThrow()
+        let token = ctx.csrfToken().getOrThrow()
         ctx.json(HashMap<String, String>([
             ("headerName", "X-CSRF-Token")
         ]))
@@ -306,7 +306,7 @@ r.post("/api/form-action", { ctx =>
 
 // 提供 Token 的端点
 r.get("/csrf/token", { ctx =>
-    let token = ctx.kvGet<String>("csrf_token").getOrThrow()
+    let token = ctx.csrfToken().getOrThrow()
 
     // 返回 Token 和表单字段名
     ctx.json(HashMap<String, String>([
@@ -534,7 +534,7 @@ CSRF Token 需要在服务器端存储（通常是 Session 或内存）：
 // CSRF 中间件自动将 Token 存储到 context
 // 在 Token 生成端点读取并返回
 r.get("/csrf/token", { ctx =>
-    let token = ctx.kvGet<String>("csrf_token").getOrThrow()
+    let token = ctx.csrfToken().getOrThrow()
     ctx.json(HashMap<String, String>([
             ("token", token)
         ]))

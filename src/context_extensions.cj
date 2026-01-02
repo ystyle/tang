@@ -1,12 +1,18 @@
 package tang
 
 /// TangHttpContext 的核心扩展
-/// 提供请求 ID、中断控制等常用功能的便捷访问方法
+/// 提供请求 ID、CSRF Token、中断控制等常用功能的便捷访问方法
 extend TangHttpContext {
     /// 获取当前请求的 ID
-    /// 由 requestid 中间件设置，存储在 kv 的 "requestid" 键中
+    /// 由 requestid 中间件设置，直接存储在 _requestId 字段中（避免使用 HashMap）
     public func requestid(): ?String {
-        return this.kvGet<String>("requestid")
+        return this._requestId
+    }
+
+    /// 获取 CSRF Token
+    /// 由 csrf 中间件设置，直接存储在 _csrfToken 字段中（避免使用 HashMap）
+    public func csrfToken(): ?String {
+        return this._csrfToken
     }
 
     /// 中止请求处理链

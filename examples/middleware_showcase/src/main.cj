@@ -243,8 +243,7 @@ app.get("/test/etag", { ctx =>
 
     // 获取 CSRF token（GET 请求会生成 token）
     csrfRoutes.get("/token", { ctx =>
-        let token = ctx.kvGet<String>("csrf_token")
-        let tokenStr = match (token) {
+        let tokenStr = match (ctx.csrfToken()) {
             case Some(t) => t
             case None => "no-token"
         }
@@ -278,8 +277,7 @@ app.get("/test/csrf/public", { ctx =>
     let testCSRF = r.group("/test/csrf2")
     testCSRF.use(csrf([withSecretKey("test123456789012345678901234567890")]))
     testCSRF.get("/direct", { ctx =>
-        let token = ctx.kvGet<String>("csrf_token")
-        let tokenStr = match (token) {
+        let tokenStr = match (ctx.csrfToken()) {
             case Some(t) => t
             case None => "no-token"
         }
