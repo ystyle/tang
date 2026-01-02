@@ -245,7 +245,6 @@
 #### 12. ✅ Idempotency - 幂等性控制 ⭐⭐⭐⭐⭐
 - **优先级**：🟠 中高（支付、订单系统必备）
 - **难度**：⭐⭐⭐ 中等
-- **预计时间**：2 小时
 - **文件**：`src/middleware/idempotency/idempotency.cj`
 - **功能**：
   - 防止重复提交（支付、订单等重要操作）
@@ -257,47 +256,88 @@
   - 支付系统：防止重复扣款
   - 订单系统：防止重复下单
   - 重要 API：防止重复操作
+- **测试状态**：✅ **集成测试全部通过**
 
-#### 13. Proxy - 反向代理 ⭐⭐⭐⭐
+#### 13. ✅ Proxy - 反向代理 ⭐⭐⭐⭐
 - **优先级**：🟢 中
 - **难度**：⭐⭐⭐⭐ 较高
-- **预计时间**：2-3 小时
 - **依赖**：`stdx.net.http.Client`（已有）
 - **文件**：`src/middleware/proxy/proxy.cj`
 - **功能**：
   - 反向代理请求到后端服务器
-  - 支持负载均衡（轮询、随机）
-  - 支持修改响应头
-  - 错误处理和重试
-- **使用场景**：
-  - API 网关
-  - 微服务架构
-  - 服务编排
+  - 支持所有 HTTP 方法（GET、POST、PUT、PATCH、DELETE）
+  - 支持负载均衡（RoundRobin、Random）
+  - 完整转发请求/响应头和 Body
+  - 添加 X-Forwarded-For 等代理 Headers
+  - 检测并拒绝 WebSocket Upgrade 请求
+  - 支持路径前缀移除
+  - 支持自定义响应修改
+- **测试状态**：✅ **集成测试全部通过**
+- **注意**：
+  - **不支持 WebSocket**：此中间件仅支持 HTTP 请求代理
+  - WebSocket Upgrade 请求会返回 426 错误
+  - 如需 WebSocket 代理，请直接连接后端服务器或使用专门的 WebSocket Proxy handler（未来实现）
 
 ---
 
 ## 📊 实现进度统计
 
 ### 当前进度
-- ✅ 已实现：21 个中间件
+- ✅ 已实现：23 个中间件
 - 🚀 第一批：14/14（已完成）✅
 - 🚀 第二批：4/4（已完成）✅
 - 🚀 第三批：3/3（已完成）✅
-- 📋 第四批：0/2（计划中）
+- 🚀 第四批：2/2（已完成）✅
 
 ### 总体目标
 - 总计：23 个中间件
-- 已完成：21/23 (91.3%)
-- **计划中**：Idempotency, Proxy
+- 已完成：23/23 (100%) ✅
+- **所有计划中间件已完成实现！** 🎉
 
 ---
 
 ## 🧪 集成测试总结
-- **最新完成**：CSRF, Session, EncryptCookie（第三批）✅
+
+### 第四批中间件测试结果（最新）
+
+#### Idempotency 测试（✅ 全部通过）
+```bash
+# 1. GET 请求（不需要幂等 key）
+curl http://localhost:10001/test/idempotency/info
+# 返回: { "message": "This endpoint does not require idempotency key" }
+
+# 2. 第一次支付请求（带幂等 key）
+curl -H 'X-Idempotency-Key: unique-key-123' -X POST http://localhost:10001/test/idempotency/payment
+# 返回: { "message": "Payment successful", "paymentId": "PAY-1234567890" }
+
+# 3. 相同 key 的第二次请求（返回缓存响应）
+curl -H 'X-Idempotency-Key: unique-key-123' -X POST http://localhost:10001/test/idempotency/payment
+# 返回: 相同的 paymentId（证明使用了缓存）
+
+# 4. 订单创建测试
+curl -H 'X-Idempotency-Key: order-key-456' -X POST http://localhost:10001/test/idempotency/order
+# 返回: { "message": "Order created", "orderId": "ORD-1234567890" }
+```
+
+#### Proxy 测试（✅ 全部通过）
+```bash
+# 1. GET 代理测试
+curl http://localhost:10001/test/proxy/api/info
+# 返回: { "framework": "Tang", ... } （代理到 /api/info）
+
+# 2. POST 代理测试
+curl -X POST -H 'Content-Type: application/json' \
+  -d '{"test":"data"}' \
+  http://localhost:10001/test/proxy/api/test-cache
+# 返回: 后端响应（证明 POST 请求被正确转发）
+
+# 3. WebSocket Upgrade 检测测试
+curl -H 'Upgrade: websocket' http://localhost:10001/test/proxy/api/info
+# 返回: 426 Upgrade Required
+# Body: { "error": "WebSocket not supported by HTTP proxy" }
+```
 
 ---
-
-## 🧪 集成测试总结
 
 ### 第三批中间件测试结果
 
@@ -432,6 +472,24 @@ public func {middleware}(): MiddlewareFunc {
 
 ## 📝 变更日志
 
+### 2026-01-02（第四批完成 - 所有中间件完成）🎉
+- ✅ 实现第四批中间件：Idempotency, Proxy - **集成测试全部通过**
+- 🔐 **Idempotency**：防止重复提交（支付、订单系统必备）
+  - 基于 SHA256 生成幂等 key
+  - 内存缓存响应（Mutex 安全）
+  - 支持自定义过期时间
+  - 测试：缓存命中、GET 请求排除全部通过
+- 🌐 **Proxy**：完整的 HTTP 反向代理
+  - 支持所有 HTTP 方法（GET、POST、PUT、PATCH、DELETE）
+  - 完整转发请求/响应（Headers、Body、Status）
+  - 负载均衡（RoundRobin、Random）
+  - 添加 X-Forwarded-* 代理 Headers
+  - WebSocket 检测并返回 426 错误（方案 A：WebSocket 代理作为独立功能）
+  - 使用 `case ... where` 模式匹配守卫语法
+  - 测试：GET/POST 代理、WebSocket 拒绝全部通过
+- 📝 更新路线图进度：**23/23 (100%)** ✅
+- 🎯 **所有 23 个计划中间件已实现并测试完成！** 🎉
+
 ### 2026-01-02（第三批完成 - 集成测试）
 - ✅ 实现第三批中间件：CSRF, Session, EncryptCookie - **集成测试全部通过**
 - 🔐 **CSRF**：使用 HMAC-SHA256 签名防止跨站请求伪造
@@ -458,11 +516,10 @@ public func {middleware}(): MiddlewareFunc {
 - ✅ 第一批（2026-01-02）：HealthCheck, Redirect, Favicon, Timeout - 全部测试通过
 - ✅ 第二批（2026-01-02）：KeyAuth, Rewrite, Cache, ETag - 全部测试通过
 - ✅ 第三批（2026-01-02）：CSRF, Session, EncryptCookie - **全部集成测试通过** ✨
+- ✅ 第四批（2026-01-02）：Idempotency, Proxy - **全部集成测试通过** ✨
 
 ### 🎯 里程碑
-- **17 个核心中间件已完成实现和集成测试**
-- 覆盖监控、安全、日志、异常处理、流量控制、缓存、会话管理等核心功能
+- **23 个中间件全部完成！** 🎉
+- 覆盖监控、安全、日志、异常处理、流量控制、缓存、会话管理、代理等核心功能
 - 所有中间件均在 `examples/middleware_showcase` 中有完整示例
-
-### 📅 计划中
-- 第四批：Proxy, Idempotency, Adaptor（可选，优先级较低）
+- **Tang 框架中间件系统实现完成！** 🚀

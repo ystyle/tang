@@ -30,6 +30,7 @@ import tang.middleware.csrf.{csrf, withSecretKey, withExpiration, withExcludePat
 import tang.middleware.session.{session, withExpiration as sessionExpiration, withCookieName, Session}
 import tang.middleware.encryptcookie.{encryptCookie, withKeysFromHex, withExcludeCookie}
 import tang.middleware.idempotency.{idempotency, withLifetime, withKeyHeader, IdempotencyStore, CachedResponse}
+import tang.middleware.proxy.{proxy, withBackend, withStripPrefix, LoadBalanceStrategy}
 
 main() {
     // 创建路由器，应用全局中间件
@@ -435,6 +436,24 @@ main() {
         ]))
     })
 
+    // ============ Proxy 中间件测试 ============
+    // Proxy 演示：将 /test/proxy/* 转发到本地 API
+    // 注意：需要在 proxyRoutes 下注册一个 catch-all 路由
+    let proxyRoutes = r.group("/test/proxy")
+
+    // 应用 Proxy 中间件（代理到本地 API）
+    proxyRoutes.use(proxy([
+        withBackend("http://localhost:10001"),  // 代理到本地服务器
+        withStripPrefix("/test/proxy")           // 移除 /test/proxy 前缀
+    ]))
+
+    // 注册 catch-all 路由，让 Proxy 中间件处理所有请求
+    proxyRoutes.all("/*", { ctx =>
+        // 这个 handler 实际上不会被执行到
+        // 因为 Proxy 中间件会转发请求并返回响应
+        ctx.responseBuilder.status(404u16).body("Proxy: No route configured")
+    })
+
     // Favicon 测试 - 直接路由处理器
     r.get("/favicon.ico", { ctx =>
         // 1x1 透明 GIF
@@ -621,6 +640,16 @@ main() {
     println("")
     println("  # 4. Order creation test")
     println("  curl -H 'X-Idempotency-Key: order-key-456' -X POST http://localhost:${server.port}/test/idempotency/order")
+    println("")
+    println("[Proxy Test]")
+    println("  # 1. Proxy GET request (forwards to /api/info)")
+    println("  curl http://localhost:${server.port}/test/proxy/api/info")
+    println("")
+    println("  # 2. Proxy POST request")
+    println("  curl -X POST -H 'Content-Type: application/json' -d '{\"test\":\"data\"}' http://localhost:${server.port}/test/proxy/api/test-cache")
+    println("")
+    println("  # 3. WebSocket Upgrade test (should return 426 error)")
+    println("  curl -H 'Upgrade: websocket' http://localhost:${server.port}/test/proxy/api/info")
     println("")
     println("Press Ctrl+C to stop the server")
     println("========================================")
