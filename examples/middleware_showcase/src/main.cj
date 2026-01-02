@@ -29,6 +29,7 @@ import tang.middleware.etag.{etag, withWeak}
 import tang.middleware.csrf.{csrf, withSecretKey, withExpiration, withExcludePath as csrfExcludePath}
 import tang.middleware.session.{session, withExpiration as sessionExpiration, withCookieName, Session}
 import tang.middleware.encryptcookie.{encryptCookie, withKeysFromHex, withExcludeCookie}
+import tang.middleware.idempotency.{idempotency, withLifetime, withKeyHeader, IdempotencyStore, CachedResponse}
 
 main() {
     // 创建路由器，应用全局中间件
@@ -370,6 +371,70 @@ main() {
         ]))
     })
 
+    // ========== Idempotency 测试 ==========
+    let idempotencyRoutes = r.group("/test/idempotency")
+    idempotencyRoutes.use(idempotency([
+        withKeyHeader("X-Idempotency-Key"),
+        withLifetime(3600)  // 1 小时
+    ]))
+
+    // 模拟支付接口（需要幂等性保护）
+    idempotencyRoutes.post("/payment", { ctx =>
+        // 检查是否已经处理过（中间件已经检查过缓存，这里直接处理）
+        let keyOpt = ctx.kvGet<String>("idempotency_key")
+        let storeOpt = ctx.kvGet<IdempotencyStore>("idempotency_store")
+
+        // 模拟支付处理
+        let paymentId = "PAY-${DateTime.now().toUnixTimeStamp().toSeconds()}"
+        let amount = "100.00"
+
+        // 构建响应
+        let responseBody = """
+        {"message":"Payment successful","paymentId":"${paymentId}","amount":"${amount}","status":"completed"}
+        """
+
+        // 返回响应
+        ctx.responseBuilder.status(200u16)
+        ctx.responseBuilder.body(responseBody)
+
+        // 保存到缓存（首次请求）
+        if (let Some(key) <- keyOpt && let Some(store) <- storeOpt) {
+            let cachedResponse = CachedResponse(200u16, responseBody)
+            store.set(key, cachedResponse)
+        }
+    })
+
+    // 模拟订单创建（需要幂等性保护）
+    idempotencyRoutes.post("/order", { ctx =>
+        let keyOpt = ctx.kvGet<String>("idempotency_key")
+        let storeOpt = ctx.kvGet<IdempotencyStore>("idempotency_store")
+
+        let orderId = "ORD-${DateTime.now().toUnixTimeStamp().toSeconds()}"
+        let items = "item1,item2,item3"
+
+        let responseBody = """
+        {"message":"Order created","orderId":"${orderId}","items":"${items}","status":"pending","hint":"Send same request again with same key to test idempotency"}
+        """
+
+        ctx.responseBuilder.status(200u16)
+        ctx.responseBuilder.body(responseBody)
+
+        // 保存到缓存（首次请求）
+        if (let Some(key) <- keyOpt && let Some(store) <- storeOpt) {
+            let cachedResponse = CachedResponse(200u16, responseBody)
+            store.set(key, cachedResponse)
+        }
+    })
+
+    // 不需要幂等性的接口（GET 请求，自动排除）
+    idempotencyRoutes.get("/info", { ctx =>
+        ctx.json(HashMap<String, String>([
+            ("message", "This endpoint does not require idempotency key"),
+            ("reason", "GET requests are automatically excluded"),
+            ("usage", "POST endpoints require X-Idempotency-Key header")
+        ]))
+    })
+
     // Favicon 测试 - 直接路由处理器
     r.get("/favicon.ico", { ctx =>
         // 1x1 透明 GIF
@@ -541,6 +606,21 @@ main() {
     println("[EncryptCookie Test]")
     println("  # Note: Due to framework limitations, this is a demonstration endpoint")
     println("  curl http://localhost:${server.port}/test/encryptcookie/set")
+    println("")
+    println("========== New Advanced Middlewares (Fourth Batch) ==========")
+    println("")
+    println("[Idempotency Test]")
+    println("  # 1. GET request (no idempotency key needed)")
+    println("  curl http://localhost:${server.port}/test/idempotency/info")
+    println("")
+    println("  # 2. First payment request (with idempotency key)")
+    println("  curl -H 'X-Idempotency-Key: unique-key-123' -X POST http://localhost:${server.port}/test/idempotency/payment")
+    println("")
+    println("  # 3. Second request with same key (should return cached response)")
+    println("  curl -H 'X-Idempotency-Key: unique-key-123' -X POST http://localhost:${server.port}/test/idempotency/payment")
+    println("")
+    println("  # 4. Order creation test")
+    println("  curl -H 'X-Idempotency-Key: order-key-456' -X POST http://localhost:${server.port}/test/idempotency/order")
     println("")
     println("Press Ctrl+C to stop the server")
     println("========================================")
