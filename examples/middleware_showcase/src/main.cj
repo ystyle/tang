@@ -5,6 +5,7 @@ import std.collection.ArrayList
 import std.time.DateTime
 import stdx.log.LogLevel
 import stdx.net.http.ServerBuilder
+import stdx.encoding.hex.{fromHexString, toHexString}
 import tang.*
 
 // 导入所有中间件
@@ -25,6 +26,9 @@ import tang.middleware.keyauth.{keyAuth, withKey, withLookup}
 import tang.middleware.rewrite.{createRewriteFunction}
 import tang.middleware.cache.{cache, withDuration,withRules, withExcludePath, CacheRule}
 import tang.middleware.etag.{etag, withWeak}
+import tang.middleware.csrf.{csrf, withSecretKey, withExpiration, withExcludePath as csrfExcludePath}
+import tang.middleware.session.{session, withExpiration as sessionExpiration, withCookieName, Session}
+import tang.middleware.encryptcookie.{encryptCookie, withKeysFromHex, withExcludeCookie}
 
 main() {
     // 创建路由器，应用全局中间件
@@ -103,6 +107,15 @@ main() {
             - GET  /api/test-cache        - Test Cache & ETag middleware
             - GET  /old/api/info          - Test Rewrite middleware -> /api/info
             - GET  /static/*              - Static files (real files from public/)
+
+            New Security Middlewares (Third Batch):
+            - GET  /test/csrf/token       - Get CSRF token
+            - POST /test/csrf/protected   - Test CSRF validation (needs token)
+            - GET  /test/csrf/public      - Public endpoint (no CSRF)
+            - POST /test/session/login    - Create session
+            - GET  /test/session/profile  - Read session data
+            - POST /test/session/logout   - Clear session
+            - GET  /test/encryptcookie/*  - Test cookie encryption
             "#
         ctx.responseBuilder.body(body)
         println("Request ID: ${ridStr}")  // 使用 ridStr 避免警告
@@ -196,6 +209,164 @@ main() {
             ("timestamp", "${DateTime.now()}"),
             ("etag", "Check the ETag response header"),
             ("hint", "ETag is generated from URL path and query params")
+        ]))
+    })
+
+    // ========== CSRF 测试 ==========
+    // CSRF 中间件路由组
+    let csrfRoutes = r.group("/test/csrf")
+    csrfRoutes.use(csrf([
+        withSecretKey("012345678901234567890123456789012"),  // 32 字节 hex 密钥
+        withExpiration(3600),  // 1 小时过期
+        csrfExcludePath("/test/csrf/public")  // 公开端点不需要 CSRF
+    ]))
+
+    // 调试端点：测试 kvSet/kvGet
+    csrfRoutes.get("/debug", { ctx =>
+        ctx.kvSet("debug_key", "debug_value")
+        let value = ctx.kvGet<String>("debug_key")
+        let valueStr = match (value) {
+            case Some(v) => v
+            case None => "none"
+        }
+        ctx.json(HashMap<String, String>([
+            ("debug", "kvSet/kvGet test"),
+            ("value", valueStr),
+            ("path", ctx.path())
+        ]))
+    })
+
+    // 获取 CSRF token（GET 请求会生成 token）
+    csrfRoutes.get("/token", { ctx =>
+        let token = ctx.kvGet<String>("csrf_token")
+        let tokenStr = match (token) {
+            case Some(t) => t
+            case None => "no-token"
+        }
+        ctx.json(HashMap<String, String>([
+            ("message", "CSRF token generated"),
+            ("token", tokenStr),
+            ("header", "X-CSRF-Token"),
+            ("hint", "Include this token in X-CSRF-Token header for POST/PUT/DELETE requests")
+        ]))
+    })
+
+    // 测试 CSRF 验证（POST 请求需要 token）
+    csrfRoutes.post("/protected", { ctx =>
+        ctx.json(HashMap<String, String>([
+            ("message", "CSRF validation successful"),
+            ("status", "authenticated"),
+            ("info", "Your request included a valid CSRF token")
+        ]))
+    })
+
+    // 公开端点（不需要 CSRF token）
+    r.get("/test/csrf/public", { ctx =>
+        ctx.json(HashMap<String, String>([
+            ("message", "This is a public endpoint"),
+            ("csrf", "not required"),
+            ("path", "excluded from CSRF protection")
+        ]))
+    })
+
+    // 测试：直接在路由上应用 CSRF 中间件
+    let testCSRF = r.group("/test/csrf2")
+    testCSRF.use(csrf([withSecretKey("test123456789012345678901234567890")]))
+    testCSRF.get("/direct", { ctx =>
+        let token = ctx.kvGet<String>("csrf_token")
+        let tokenStr = match (token) {
+            case Some(t) => t
+            case None => "no-token"
+        }
+        ctx.json(HashMap<String, String>([
+            ("test", "direct middleware application"),
+            ("token", tokenStr)
+        ]))
+    })
+
+    // ========== Session 测试 ==========
+    // Session 中间件路由组
+    let sessionRoutes = r.group("/test/session")
+    sessionRoutes.use(session([
+        sessionExpiration(3600),  // 1 小时过期
+        withCookieName("test_session")
+    ]))
+
+    // 设置 session
+    sessionRoutes.post("/login", { ctx =>
+        let sess = ctx.kvGet<Session>("session")
+        if (let Some(s) <- sess) {
+            s.data.set("userId", "12345")
+            s.data.set("username", "testuser")
+            s.data.set("loginTime", "${DateTime.now()}")
+        }
+        ctx.json(HashMap<String, String>([
+            ("message", "Session created successfully"),
+            ("action", "login"),
+            ("hint", "Session data stored: userId, username, loginTime")
+        ]))
+    })
+
+    // 读取 session
+    sessionRoutes.get("/profile", { ctx =>
+        let sess = ctx.kvGet<Session>("session")
+        if (let Some(s) <- sess) {
+            let userId = s.data.get("userId") ?? "none"
+            let username = s.data.get("username") ?? "none"
+            let loginTime = s.data.get("loginTime") ?? "none"
+
+            ctx.json(HashMap<String, String>([
+                ("message", "Session retrieved successfully"),
+                ("userId", userId),
+                ("username", username),
+                ("loginTime", loginTime),
+                ("sessionId", s.id)
+            ]))
+        } else {
+            ctx.json(HashMap<String, String>([
+                ("message", "No session found"),
+                ("hint", "POST /test/session/login first")
+            ]))
+        }
+    })
+
+    // 清除 session
+    sessionRoutes.post("/logout", { ctx =>
+        let sess = ctx.kvGet<Session>("session")
+        if (let Some(s) <- sess) {
+            s.data.clear()
+        }
+        ctx.json(HashMap<String, String>([
+            ("message", "Session cleared successfully"),
+            ("action", "logout")
+        ]))
+    })
+
+    // ========== EncryptCookie 测试 ==========
+    r.get("/test/encryptcookie/set", { ctx =>
+        // 由于当前框架限制，这里只展示说明
+        // 实际使用时需要在应用路由前添加 encryptCookie 中间件
+        ctx.json(HashMap<String, String>([
+            ("message", "EncryptCookie middleware demonstration"),
+            ("encryption", "SM4-CBC + HMAC-SHA256"),
+            ("format", "base64(iv+encrypted).hex(signature)"),
+            ("usage", "Add encryptCookie middleware to your router"),
+            ("hint", "See middleware/encryptcookie/encryptcookie.cj for usage examples")
+        ]))
+    })
+
+    r.get("/test/encryptcookie/get", { ctx =>
+        // 读取 cookie（会自动解密）
+        let testCookie = ctx.cookie("test_cookie")
+        let cookieValue = match (testCookie) {
+            case Some(v) => v
+            case None => "not-set"
+        }
+
+        ctx.json(HashMap<String, String>([
+            ("message", "Cookie retrieved"),
+            ("test_cookie", cookieValue),
+            ("note", "EncryptCookie middleware auto-decrypts on read")
         ]))
     })
 
@@ -345,9 +516,36 @@ main() {
     println("[ETag Test]")
     println("  curl -I http://localhost:${server.port}/test/etag")
     println("")
+    println("========== New Security Middlewares (Third Batch) ==========")
+    println("")
+    println("[CSRF Test]")
+    println("  # 1. Get CSRF token")
+    println("  curl http://localhost:${server.port}/test/csrf/token")
+    println("")
+    println("  # 2. Use token in protected endpoint")
+    println("  curl -H 'X-CSRF-Token: <token>' http://localhost:${server.port}/test/csrf/protected")
+    println("")
+    println("  # 3. Public endpoint (no token needed)")
+    println("  curl http://localhost:${server.port}/test/csrf/public")
+    println("")
+    println("[Session Test]")
+    println("  # 1. Create session")
+    println("  curl -c cookies.txt http://localhost:${server.port}/test/session/login -X POST")
+    println("")
+    println("  # 2. Read session")
+    println("  curl -b cookies.txt http://localhost:${server.port}/test/session/profile")
+    println("")
+    println("  # 3. Clear session")
+    println("  curl -b cookies.txt http://localhost:${server.port}/test/session/logout -X POST")
+    println("")
+    println("[EncryptCookie Test]")
+    println("  # Note: Due to framework limitations, this is a demonstration endpoint")
+    println("  curl http://localhost:${server.port}/test/encryptcookie/set")
+    println("")
     println("Press Ctrl+C to stop the server")
     println("========================================")
     println("")
-
+    
+    server.logger.level = LogLevel.ERROR
     server.serve()
 }
