@@ -15,14 +15,17 @@ Tang 的 API 设计遵循"简洁但强大"的原则：
 - **类型安全**：充分利用仓颉的类型系统
 
 ```cj
-let r = Router()
+import tang.*
 
-r.get("/users/:id", { ctx =>
-    let id = ctx.param("id")
-    ctx.json(HashMap<String, String>([
-        ("userId", id)
-    ]))
-})
+main() {
+    let app = Tang()
+
+    app.get("/", { ctx =>
+        ctx.writeString("Hello, Tang!")
+    })
+
+    app.listen(port: 8080)
+}
 ```
 
 ### 2. 性能至上
@@ -161,8 +164,9 @@ public type MiddlewareFunc = (HandlerFunc) -> HandlerFunc
 
 // 使用中间件
 r.use(logger())              // 全局
+
+let api = r.group("/api")
 api.use(cors())              // 路由组
-r.get("/protected", auth(), handler)  // 单个路由
 ```
 
 ## 请求生命周期
@@ -367,7 +371,7 @@ Tang 借鉴了 Fiber 的设计，但针对仓颉语言特性进行了优化：
 | 语法风格 | 仓颉 | Go |
 | 类型系统 | 强类型 + Option | 接口 + nil |
 | 错误处理 | 模式匹配 | 多返回值 |
-| 并发模型 | （待补充） | Goroutines |
+| 并发模型 | 仓颉线程(协程) | Goroutines |
 | 中间件模式 | 相同 | 相同 |
 
 ## 适用场景
@@ -378,12 +382,6 @@ Tang 借鉴了 Fiber 的设计，但针对仓颉语言特性进行了优化：
 ✅ **微服务**：轻量级、高性能
 ✅ **Web 服务**：完整的 HTTP 功能
 ✅ **快速原型**：快速开发和迭代
-
-### 可能不适合的场景
-
-❌ **实时通信**：WebSocket 支持（待实现）
-❌ **超高并发**：需要进一步的性能优化
-❌ **复杂模板**：需要集成模板引擎
 
 ## 下一步
 

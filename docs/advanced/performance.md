@@ -59,22 +59,6 @@ r.get("/files/images", handler)
 r.get("/files/*", handler)           // 只用于兜底
 ```
 
-### 2. 路由分组优化
-
-```cj
-let api = r.group("/api")
-
-// ✅ 好：分组内共享中间件，减少重复注册
-api.use([recovery(), logger(), cors()])
-
-let v1 = api.group("/v1")
-v1.get("/users", handler)
-v1.post("/users", handler)
-
-// ❌ 差：每个路由单独注册中间件
-r.get("/api/v1/users", recovery(), logger(), cors(), handler)
-r.post("/api/v1/users", recovery(), logger(), cors(), handler)
-```
 
 ## 中间件性能优化
 
@@ -86,10 +70,8 @@ r.use(recovery())        // 1. 最外层（异常恢复）
 r.use(requestid())       // 2. 生成请求 ID
 r.use(logger())          // 3. 日志记录
 r.use(cors())            // 4. CORS 处理
-r.use(compress())        // 5. 响应压缩
 
 // ❌ 错误的顺序
-r.use(compress())        // 压缩太早，可能压缩不需要压缩的响应
 r.use(cors())            // CORS 在日志之后，无法记录预检请求
 r.use(logger())          // 日志太晚
 r.use(recovery())        // 恢复在最内层，无法捕获外层异常
@@ -176,8 +158,8 @@ r.get("/users/:id", { ctx =>
 ```cj
 // ✅ 好：使用类型化方法，避免手动转换
 r.get("/search", { ctx =>
-    let page = ctx.queryInt("page").getOr(1)
-    let limit = ctx.queryInt("limit").getOr(10)
+    let page = ctx.queryInt("page") ?? 1
+    let limit = ctx.queryInt("limit") ?? 10
 
     // 类型已转换，直接使用
     let users = fetchUsers(page, limit)
@@ -185,7 +167,7 @@ r.get("/search", { ctx =>
 
 // ❌ 差：手动解析和转换
 r.get("/search", { ctx =>
-    let pageStr = ctx.query("page").getOr("1")
+    let pageStr = ctx.query("page") ?? 1
     let page = Int64.parse(pageStr)  // 需要处理解析异常
 })
 ```
@@ -235,12 +217,10 @@ r.get("/api/data", { ctx =>
 ```cj
 // ✅ 好：使用完毕后清理资源
 r.get("/api/file", { ctx =>
-    let file = File.open("/path/to/file")
-    try {
+    // 使用 try-with-resource 语法来自动释放资源
+    try (file = File.open("/path/to/file"))
         let content = file.readAll()
         ctx.send(content)
-    } finally {
-        file.close()  // 及时关闭文件
     }
 })
 ```
@@ -281,7 +261,7 @@ class Counter {
 
 // ✅ 好：使用 Context 传递请求级数据
 r.get("/api/count", { ctx =>
-    let count = ctx.kvGet<Int64>("request_count").getOr(0)
+    let count = ctx.kvGet<Int64>("request_count") ?? 0
     ctx.kvSet("request_count", count + 1)
 })
 ```
@@ -374,8 +354,8 @@ class ConfigCache {
         let now = DateTime.now().toUnixTimeStamp().toMilliseconds()
 
         lock.lock()
-        if (this.config == None || now - this.lastUpdate > this.ttl) {
-            this.config = Some(fetchConfigFromDB())
+        if (this.config.isNone() || now - this.lastUpdate > this.ttl) {
+            this.config = fetchConfigFromDB()
             this.lastUpdate = now
         }
         let result = this.config.getOrThrow()

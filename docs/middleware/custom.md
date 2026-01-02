@@ -615,7 +615,7 @@ func counterMiddleware(): MiddlewareFunc {
 func counterMiddleware(): MiddlewareFunc {
     return { next =>
         return { ctx =>
-            let count = ctx.kvGet<Int64>("request_count").getOr(0)
+            let count = ctx.kvGet<Int64>("request_count") ?? 0
             ctx.kvSet("request_count", count + 1)
 
             println("Request count: ${count + 1}")

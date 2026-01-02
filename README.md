@@ -35,7 +35,6 @@ export CANGJIE_STDX_PATH=${HOME}/.config/cjvs/stdx/1.0.0/linux_x86_64_llvm/dynam
 
 ```cj
 import tang.*
-import std.collection.HashMap
 
 main() {
     let app = Tang()

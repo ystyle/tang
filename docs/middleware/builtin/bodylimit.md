@@ -286,7 +286,7 @@ func initUserLimits() {
 }
 
 func getUserLimit(username: String): Int64 {
-    userLimits.get(username).getOr(10 * 1024 * 1024)  // 默认 10MB
+    userLimits.get(username) ?? (10 * 1024 * 1024)  // 默认 10MB
 }
 
 func userBasedBodyLimit(): MiddlewareFunc {
@@ -487,7 +487,7 @@ func getLimitForUser(userType: String): (Int64, Int64) {
 func combinedLimit(): MiddlewareFunc {
     return { next =>
         return { ctx =>
-            let userType = ctx.request.headers.getFirst("X-User-Type").getOr("free")
+            let userType = ctx.request.headers.getFirst("X-User-Type") ?? "free"
             let (maxSize, maxRequests) = getLimitForUser(userType)
 
             // 1. Body Limit

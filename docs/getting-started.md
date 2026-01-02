@@ -44,7 +44,7 @@ cjpm update
 export CANGJIE_STDX_PATH=${HOME}/.config/cjvs/stdx/1.0.0/linux_x86_64_llvm/dynamic/stdx
 ```
 
-**建议**：将此环境变量添加到 shell 配置文件中，使其永久生效：
+**Tips**：若需要，将此环境变量添加到 shell 配置文件中，使其永久生效：
 
 ```bash
 # 对于 bash 用户
@@ -232,11 +232,6 @@ main() {
         ctx.writeString("Hello with middleware! 🎊")
     })
 
-    // 带认证的路由
-    app.get("/protected", authMiddleware(), { ctx =>
-        ctx.writeString("This is a protected route")
-    })
-
     app.listen()
 }
 
@@ -399,10 +394,10 @@ main() {
                 }
 
                 let todo = HashMap<String, String>([
-            ("id", "${nextId}"),
-            ("completed", "false"),
-            ("title", title)
-        ])
+                    ("id", "${nextId}"),
+                    ("completed", "false"),
+                    ("title", title)
+                ])
                 todos.add(todo)
                 nextId += 1
 
@@ -428,10 +423,10 @@ main() {
                         let completed = data.getOrDefault("completed", todos[i].getOrDefault("completed", "false"))
 
                         todos[i] = HashMap<String, String>([
-            ("id", id),
-            ("title", title),
-            ("completed", completed)
-        ])
+                            ("id", id),
+                            ("title", title),
+                            ("completed", completed)
+                        ])
 
                         ctx.json(todos[i])
                         return
