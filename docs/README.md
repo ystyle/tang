@@ -88,7 +88,7 @@ main() {
     })
 
     // 启动应用（自动打印 Banner 和路由）
-    app.listen(port: 8080)
+    app.listen(8080u16)
 }
 ```
 

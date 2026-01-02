@@ -386,7 +386,6 @@ main() {
                 ctx.status(400).json(HashMap<String, String>([
                     ("error", "Invalid JSON")
                 ]))
-        }
     })
 
     // 单个用户路由

@@ -1,5 +1,6 @@
 package tang
 
+import stdx.log.LogLevel
 import stdx.net.http.{ServerBuilder, Server}
 import cjpminfo.*
 
@@ -58,11 +59,8 @@ public class Tang {
         this
     }
 
-    /// 启动应用（阻塞）
-    public func listen(host!: String = "127.0.0.1", port!: UInt16 = 8080): Unit {
-        this.host = host
-        this.port = port
-
+    /// 启动应用（阻塞）- 使用配置的 host 和 port
+    public func listen(): Unit {
         // 打印 Banner
         if (this.printBanner) {
             this.router.printBanner(version: TANG_VERSION, port: this.port)
@@ -79,15 +77,46 @@ public class Tang {
             .addr(this.host)
             .port(this.port)
             .build()
-
+        server.logger.level = LogLevel.ERROR
         this.server = server
         server.serve()
     }
 
+    /// 启动应用（阻塞）- 指定端口
+    public func listen(port: UInt16): Unit {
+        this.port = port
+        listen()
+    }
+
+    /// 启动应用（阻塞）- 指定 host 和 port
+    public func listen(host: String, port: UInt16): Unit {
+        this.host = host
+        this.port = port
+        listen()
+    }
+
     /// 异步启动服务器
-    public func listenAsync(host!: String = "127.0.0.1", port!: UInt16 = 8080): Unit {
-        // TODO: 实现异步启动
-        listen(host: host, port: port)
+    public func listenAsync(): Unit {
+        spawn {
+            listen()
+        }
+    }
+
+    /// 异步启动服务器 - 指定端口
+    public func listenAsync(port: UInt16): Unit {
+        this.port = port
+        spawn {
+            listen()
+        }
+    }
+
+    /// 异步启动服务器 - 指定 host 和 port
+    public func listenAsync(host: String, port: UInt16): Unit {
+        this.host = host
+        this.port = port
+        spawn {
+            listen()
+        }
     }
 
     /// 停止服务器
