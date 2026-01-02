@@ -68,6 +68,7 @@ cd tang
 cjpm build
 
 # 运行示例
+cd examples/basic # 或者其它的
 cjpm run
 ```
 
