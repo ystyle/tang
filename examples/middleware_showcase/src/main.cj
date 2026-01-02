@@ -21,9 +21,13 @@ import tang.middleware.healthcheck.{healthcheck, withLivenessCheck, withReadines
 import tang.middleware.redirect.{redirect, redirectMiddleware}
 import tang.middleware.favicon.favicon
 import tang.middleware.timeout.{timeout, withTimeout, isTimeout}
+import tang.middleware.keyauth.{keyAuth, withKey, withLookup}
+import tang.middleware.rewrite.{createRewriteFunction}
+import tang.middleware.cache.{cache, withDuration,withRules, withExcludePath, CacheRule}
+import tang.middleware.etag.{etag, withWeak}
 
 main() {
-    // 创建路由器，应用所有中间件
+    // 创建路由器，应用全局中间件
     //
     // 中间件执行顺序很重要：
     // 1. recovery 应该放在最外层，捕获所有异常
@@ -33,12 +37,15 @@ main() {
     // 5. bodylimit 限制请求体大小（防止大文件攻击）
     // 6. cors 处理跨域请求
     // 7. security 添加安全响应头
+    // 8. cache 缓存控制
+    // 9. etag 缓存验证
+    // 注意：KeyAuth 不在全局应用，在特定路由上测试
     let r = Router(
-        use(
+        use([
             favicon(),                            // 0. Favicon 处理（优先级高）
             recovery(),                           // 1. 异常恢复（必须放在最外层）
             accesslog(),                          // 2. 访问日志
-            requestid,                            // 3. 请求 ID（用于追踪）
+            requestid(),
             rateLimit([                           // 4. 限流（每分钟 100 个请求）
                 withMaxRequests(100)
             ]),
@@ -50,9 +57,22 @@ main() {
                 withAllowCredentials()            //    允许携带凭证
             ]),
             security([withStrictSecurity()]),     // 7. 安全头（严格策略）
+            cache([                               // 8. Cache 缓存控制
+                withDuration(3600),               //     默认缓存 1 小时
+                withExcludePath("/test/nocache"), //     排除手动设置 header 的路径
+                withRules([
+                    CacheRule("/api/*", 0),       // API 不缓存
+                    CacheRule("/static/*", 86400) // 静态文件缓存 1 天
+                ])
+            ]),
+            etag(),                               // 9. ETag 缓存验证
             timeout(withTimeout(2000))
-        )
+        ])
     )
+
+    // 添加路径重写规则（在路由匹配之前执行）
+    r.addRewriteRule(createRewriteFunction("/api/v1/(.*)", "/api/v2/$1"))
+    r.addRewriteRule(createRewriteFunction("/old/api/(.*)", "/api/$1"))
 
     // ============ 测试路由 ============
 
@@ -72,7 +92,7 @@ main() {
             - GET  /old-path              - Test redirect (301 -> /new-path)
             - GET  /new-path              - Redirect target
             - GET  /api/info              - API info
-            - GET  /api/user              - Protected with Basic Auth
+            - GET  /api/user              - Protected with KeyAuth (X-API-Key header)
             - GET  /api/data              - JSON response
             - GET  /api/error             - Test exception recovery
             - GET  /api/headers           - Show all request headers
@@ -80,6 +100,8 @@ main() {
             - GET  /api/slow              - Test timeout middleware
             - POST /api/upload            - Test body limit (max 10MB)
             - GET  /api/test-limit        - Test rate limit (100 req/min)
+            - GET  /api/test-cache        - Test Cache & ETag middleware
+            - GET  /old/api/info          - Test Rewrite middleware -> /api/info
             - GET  /static/*              - Static files (real files from public/)
             "#
         ctx.responseBuilder.body(body)
@@ -114,6 +136,67 @@ main() {
         }
 
         ctx.responseBuilder.body("Slow operation completed\n")
+    })
+
+    // ============ 新中间件测试路由 ============
+
+    // ========== KeyAuth 测试 ==========
+    // 公开端点（不需要认证）
+    r.get("/test/keyauth", { ctx =>
+        ctx.json(HashMap<String, String>([
+            ("message", "This is a public endpoint"),
+            ("auth", "not required"),
+            ("test", "Try accessing /test/keyauth/protected with X-API-Key header")
+        ]))
+    })
+
+    // 受保护端点（需要 KeyAuth）
+    let protectedRoutes = r.group("/test/keyauth")
+    protectedRoutes.use(
+        keyAuth([
+            withKey("test-secret-key-12345"),
+            withLookup("header:X-API-Key")
+        ])
+    )
+
+    protectedRoutes.get("/protected", { ctx =>
+        ctx.json(HashMap<String, String>([
+            ("message", "You are authenticated!"),
+            ("auth", "success"),
+            ("info", "KeyAuth middleware is working correctly")
+        ]))
+    })
+
+    // ========== Rewrite 测试 ==========
+    // Rewrite 中间件已在全局中间件中配置（第 61-62 行）
+    // 这里只需要注册目标路由即可
+
+    // ========== Cache 测试 ==========
+    r.get("/test/cache", { ctx =>
+        ctx.json(HashMap<String, String>([
+            ("message", "This response is cached for 1 hour"),
+            ("cache-control", "max-age=3600"),
+            ("hint", "Check the Cache-Control response header")
+        ]))
+    })
+
+    r.get("/test/nocache", { ctx =>
+        // 手动设置 Cache-Control header（中间件已排除此路径）
+        ctx.responseBuilder.header("Cache-Control", "no-store, no-cache, must-revalidate")
+        ctx.json(HashMap<String, String>([
+            ("message", "This response is not cached"),
+            ("cache-control", "no-store")
+        ]))
+    })
+
+    // ========== ETag 测试 ==========
+    r.get("/test/etag", { ctx =>
+        ctx.json(HashMap<String, String>([
+            ("message", "This response includes ETag header"),
+            ("timestamp", "${DateTime.now()}"),
+            ("etag", "Check the ETag response header"),
+            ("hint", "ETag is generated from URL path and query params")
+        ]))
     })
 
     // Favicon 测试 - 直接路由处理器
@@ -152,20 +235,33 @@ main() {
     // 创建 API 分组
     let api = r.group("/api")
 
-    api.get("/user", { ctx =>
+    // Rewrite 测试路由：/api/v1/users -> /api/v2/users
+    api.get("/v2/users", { ctx =>
         ctx.json(HashMap<String, String>([
-            ("username", "admin"),
-            ("role", "administrator"),
-            ("status", "authenticated")
+            ("users", "[]"),
+            ("note", "This endpoint can be accessed via /api/v1/users (rewritten to /api/v2/users)")
         ]))
     })
 
+    // Rewrite 测试路由：/old/api/data -> /api/data
     api.get("/data", { ctx =>
-        // 返回一些示例数据
         ctx.json(HashMap<String, String>([
-            ("timestamp", "${DateTime.now()}"),
-            ("message", "This is example JSON data")
+            ("message", "URL was rewritten from /old/api/data to /api/data"),
+            ("original", "/old/api/data"),
+            ("current", "/api/data"),
+            ("middleware", "Rewrite is working!")
         ]))
+    })
+
+    api.get("/test-cache", { ctx =>
+        // 测试 Cache 和 ETag 中间件
+        let data = HashMap<String, String>([
+            ("timestamp", "${DateTime.now()}"),
+            ("message", "This response should have Cache-Control and ETag headers"),
+            ("cache", "Check the Cache-Control header"),
+            ("etag", "Check the ETag header")
+        ])
+        ctx.json(data)
     })
 
     // 测试异常恢复
@@ -232,29 +328,22 @@ main() {
     println("")
     println("Server running at: http://localhost:${server.port}")
     println("")
-    println("Available endpoints:")
-    println("  GET  /                 - Homepage")
-    println("  GET  /api/info         - API information")
-    println("  GET  /api/user         - Protected (user: admin, pass: secret123)")
-    println("  GET  /api/data         - Protected JSON data")
-    println("  GET  /api/error        - Test exception handling")
-    println("  GET  /api/headers      - Show request headers")
-    println("  GET  /api/delay        - Test slow response (1s)")
-    println("  POST /api/upload       - Test body limit (max 10MB)")
-    println("  GET  /api/test-limit   - Test rate limit (100 req/min)")
-    println("  GET  /static/*         - Static files (from public/)")
+    println("🔐 Middleware Testing Guide:")
     println("")
-    println("Active middlewares:")
-    println("  ✓ Recovery           - Exception handling")
-    println("  ✓ Access Log         - Request logging")
-    println("  ✓ Request ID         - Request tracking")
-    println("  ✓ Rate Limit         - Rate limiting (100 req/min)")
-    println("  ✓ Body Limit         - Request body size limit (10MB)")
-    println("  ✓ CORS               - Cross-origin support")
-    println("  ✓ Security Headers   - Security policy")
-    println("  ✓ Static Files       - Static file serving")
+    println("[KeyAuth Test]")
+    println("  curl http://localhost:${server.port}/test/keyauth")
+    println("  curl -H 'X-API-Key: test-secret-key-12345' http://localhost:${server.port}/test/keyauth/protected")
     println("")
-    println("  (Compression: Recommended to use Nginx/Proxy)")
+    println("[Rewrite Test]")
+    println("  curl http://localhost:${server.port}/old/api/data")
+    println("  curl http://localhost:${server.port}/api/v1/users")
+    println("")
+    println("[Cache Test]")
+    println("  curl -I http://localhost:${server.port}/test/cache")
+    println("  curl -I http://localhost:${server.port}/test/nocache")
+    println("")
+    println("[ETag Test]")
+    println("  curl -I http://localhost:${server.port}/test/etag")
     println("")
     println("Press Ctrl+C to stop the server")
     println("========================================")

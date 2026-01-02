@@ -11,7 +11,16 @@ extend TangHttpContext {
     }
 
     /// 获取请求路径
+    /// 如果有重写后的路径（Rewrite 中间件设置），则返回重写后的路径
     public func path(): String {
+        // 先检查是否有重写后的路径
+        let rewrittenPath = this.kvGet<String>("rewritten_path")
+        match (rewrittenPath) {
+            case Some(p) => return p
+            case None => ()
+        }
+
+        // 没有重写，返回原始路径
         if (this.request.url.rawPath.isEmpty()) {
             return this.request.url.path
         } else {

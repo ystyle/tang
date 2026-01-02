@@ -3,7 +3,7 @@ tang = { path = "../../" }
 
 [package]
 cjc-version = "0.59.6"
-compile-option = ""
+compile-option = "-Woff unused"
 description = "Tang 中间件功能展示示例"
 link-option = ""
 name = "middleware_showcase"

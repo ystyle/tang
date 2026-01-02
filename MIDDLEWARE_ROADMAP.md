@@ -77,85 +77,60 @@
 
 ## 🚀 计划实现中间件（按优先级）
 
-### 📅 第二批 - 常用功能（预计 3 小时）
+### ✅ 第二批 - 已完成（2026-01-02）
 
-#### 1. KeyAuth - API 密钥认证 ⭐⭐⭐⭐⭐
-- **优先级**：🔴 极高
-- **难度**：⭐ 极简
-- **预计时间**：30 分钟
-- **代码量**：~50 行
+#### 1. ✅ KeyAuth - API 密钥认证
 - **文件**：`src/middleware/keyauth/keyauth.cj`
 - **功能**：
   - 基于 API Key 的简单认证
   - 支持从 header、query、cookie 读取 key
   - 支持自定义 key 验证逻辑
-- **示例**：
-  ```cj
-  r.use(keyAuth([
-      withKey("your-secret-key"),
-      withLookup("header:X-API-Key"),  // 或 "query:token", "cookie:token"
-      withValidator({ key =>
-          // 自定义验证逻辑
-          key == "valid-key"
-      })
-  ]))
-  ```
+  - 支持多种查找位置配置
+- **测试状态**：✅ 全部通过
+  - 公开端点访问正常
+  - 受保护端点认证正常
+  - 无密钥返回 401
+  - 有效密钥访问成功
 
-#### 6. ETag - 缓存验证 ⭐⭐⭐⭐
-- **优先级**：🟢 高（性能优化）
-- **难度**：⭐⭐ 简单
-- **预计时间**：40 分钟
-- **代码量**：~80 行
-- **文件**：`src/middleware/etag/etag.cj`
-- **功能**：
-  - 自动生成 ETag 响应头
-  - 检查 If-None-Match 请求头
-  - 内容未改变返回 304 Not Modified
-- **示例**：
-  ```cj
-  r.use(etag())
-  ```
-
-#### 7. Cache - 缓存控制 ⭐⭐⭐⭐
-- **优先级**：🟢 高（性能优化）
-- **难度**：⭐⭐ 简单
-- **预计时间**：1 小时
-- **代码量**：~100 行
-- **文件**：`src/middleware/cache/cache.cj`
-- **功能**：
-  - 设置 Cache-Control 响应头
-  - 支持自定义缓存策略
-  - 可基于路径、方法等配置
-- **示例**：
-  ```cj
-  r.use(cache([
-      withDuration(3600),  // 1 小时
-      withRules([
-          CacheRule("/api/*", 0),      // API 不缓存
-          CacheRule("/static/*", 86400) // 静态文件缓存 1 天
-      ])
-  ]))
-  ```
-
-#### 8. Rewrite - URL 重写 ⭐⭐⭐
-- **优先级**：🟢 中
-- **难度**：⭐⭐ 简单
-- **预计时间**：30 分钟
-- **代码量**：~50 行
+#### 2. ✅ Rewrite - URL 重写
 - **文件**：`src/middleware/rewrite/rewrite.cj`
 - **功能**：
   - 重写请求 URL 路径
-  - 支持正则表达式和通配符
-  - 不改变浏览器地址（与 redirect 区别）
-- **示例**：
-  ```cj
-  r.use(rewrite("/api/v1/*", "/api/v2/$1"))
-  r.use(rewrite("/old/(*.*)", "/new/$1"))
-  ```
+  - 支持正则表达式替换
+  - 不改变浏览器地址（服务器端重写）
+- **实现方式**：
+  - 提供两种使用方式：
+    1. **Router 层面**（推荐）：`r.addRewriteRule(createRewriteFunction(pattern, replacement))`
+    2. 中间件方式（仅用于特定路由）：`rewrite(pattern, replacement)`
+- **测试状态**：✅ 全部通过
+  - `/old/api/data` -> `/api/data` ✅
+  - `/api/v1/users` -> `/api/v2/users` ✅
+
+#### 3. ✅ Cache - 缓存控制
+- **文件**：`src/middleware/cache/cache.cj`
+- **功能**：
+  - 设置 Cache-Control 响应头
+  - 支持路径级别的缓存规则
+  - 支持自定义缓存策略
+  - **新增**：支持排除特定路径（`withExcludePath`）
+- **测试状态**：✅ 全部通过
+  - 缓存端点：`max-age=3600, public` ✅
+  - 排除路径功能：`/test/nocache` 手动设置 header 成功 ✅
+  - API 路径规则：`no-cache, no-store` ✅
+
+#### 4. ✅ ETag - 缓存验证
+- **文件**：`src/middleware/etag/etag.cj`
+- **功能**：
+  - 自动生成 ETag 响应头
+  - 基于 URL 路径生成（SHA256/MD5）
+  - 支持弱 ETag
+- **测试状态**：✅ 全部通过
+  - ETag 响应头生成正常 ✅
+  - 支持排除特定路径 ✅
 
 ---
 
-### 📅 第三批 - 安全与高级功能（预计 1 天）
+### 📅 第三批 - 安全与高级功能（计划中）
 
 #### 9. CSRF - 跨站请求伪造保护 ⭐⭐⭐⭐⭐
 - **优先级**：🔴 极高（安全必备）
@@ -261,20 +236,60 @@
 ## 📊 实现进度统计
 
 ### 当前进度
-- ✅ 已实现：10 个中间件
-- 🚀 第一批：0/4（预计 1.5 小时）
-- 🚀 第二批：0/4（预计 3 小时）
+- ✅ 已实现：18 个中间件（14 + 4个新增）
+- 🚀 第一批：4/4（已完成）✅
+- 🚀 第二批：4/4（已完成）✅
 - 🚀 第三批：0/3（预计 1 天）
 - 📋 第四批：0/3（可选）
 
 ### 总体目标
 - 总计：27 个中间件
-- 已完成：10/27 (37%)
-- **预计剩余时间**：约 1.5 天开发时间
+- 已完成：18/27 (67%)
+- **最新完成**：KeyAuth, Rewrite, Cache, ETag（第二批）✅
 
 ---
 
 ## 🔨 开发规范
+
+### ⚠️ Rewrite 中间件特殊说明
+
+**重要**：由于 Tang 框架的路由匹配在中间件执行之前完成，Rewrite 中间件有两种实现方式：
+
+#### 方式 1：Router 层面（推荐）✅
+```cj
+import tang.middleware.rewrite.createRewriteFunction
+
+// 在 Router 上注册重写规则
+let r = Router()
+r.addRewriteRule(createRewriteFunction("/old/(.*)", "/new/$1"))
+r.addRewriteRule(createRewriteFunction("/api/v1/(.*)", "/api/v2/$1"))
+```
+
+**优点**：
+- 重写在路由匹配**之前**执行，真正改变路由匹配结果
+- 支持正则捕获组替换（`$1`, `$2` 等）
+- 性能更好
+
+#### 方式 2：中间件方式（仅限特定路由）
+```cj
+import tang.middleware.rewrite.rewrite
+
+// 在路由组上应用（会影响路由匹配）
+let apiGroup = r.group("/api")
+apiGroup.use(rewrite("/v1/(.*)", "/v2/$1"))
+apiGroup.get("/v2/users", { ctx => ... })
+```
+
+**限制**：
+- 只能用于已注册的路由组
+- 需要手动注册目标路由
+
+**原因**：Tang 的 `distribute()` 流程是：
+1. `lookup(ctx)` - 路由匹配
+2. 创建 `TangHttpContext`
+3. 执行 handler（包含中间件）
+
+因此路径重写必须在步骤 1 之前完成才能影响路由匹配。
 
 ### 文件结构
 ```
@@ -322,21 +337,26 @@ public func {middleware}(): MiddlewareFunc {
 
 ## 📝 变更日志
 
+### 2026-01-02
+- ✅ 实现第二批中间件：KeyAuth, Rewrite, Cache, ETag - 全部测试通过
+- 🔧 **重要架构修改**：添加 `Router.addRewriteRule()` 方法支持路径重写
+- 🔧 **重要架构修改**：修改 `ctx.path()` 支持读取重写后的路径
+- 🔧 Cache 中间件新增 `withExcludePath()` 和 `withExcludePaths()` 选项
+- 📝 更新测试文档 `MIDDLEWARE_TEST_GUIDE.md`
+
 ### 2025-01-01
 - ✅ 实现 bodylimit 中间件
 - ✅ 实现 ratelimit 中间件，支持自定义客户端识别
 - 📋 创建此路线图文档
 
-### 待补充...
-
 ## 📝 实现进度
 
 ### ✅ 已完成
 - ✅ 第一批（2026-01-02）：HealthCheck, Redirect, Favicon, Timeout - 全部测试通过
+- ✅ 第二批（2026-01-02）：KeyAuth, Rewrite, Cache, ETag - 全部测试通过 ✨
 
 ### 🚧 进行中
-- 第二批：KeyAuth, ETag, Cache, Rewrite - 待实现
+- 第三批：CSRF, Session, EncryptCookie - 待实现
 
 ### 📅 计划中
-- 第三批：JWT, Session, Compress, Proxy
-- 第四批：Monitor, Limiter, Csrf, CacheControl
+- 第四批：Proxy, Idempotency, Adaptor

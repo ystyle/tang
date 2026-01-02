@@ -2,6 +2,7 @@ package tang
 
 import std.sync.Mutex
 import std.collection.HashMap
+import std.collection.ArrayList
 import stdx.net.http.{HttpContext, FuncHandler, RedirectHandler, NotFoundHandler, HttpRequestHandler, HttpRequestDistributor}
 import stdx.net.http.HttpStatusCode
 import stdx.encoding.url.URL
@@ -15,6 +16,7 @@ public class Router <: HttpRequestDistributor {
     let mu: Mutex = Mutex()
     var handlers: HashMap<String, HandlerFunc> = HashMap<String, HandlerFunc>()
     var patterns: HashMap<String, String> = HashMap<String, String>()  // 存储从实际路径到pattern的映射
+    var rewriteRules: ArrayList<(String) -> String> = ArrayList<(String) -> String>()  // 路径重写规则
 
     public init() {
         println("\tTang Web Frameworks")
@@ -56,6 +58,15 @@ public class Router <: HttpRequestDistributor {
         var path = ctx.request.url.rawPath
         if (path == "") {
             path = ctx.request.url.path
+        }
+
+        // 应用路径重写规则（在路由匹配之前）
+        for (rule in this.rewriteRules) {
+            let newPath = rule(path)
+            if (newPath != path) {
+                path = newPath
+                break  // 只应用第一个匹配的规则
+            }
         }
 
         let method = ctx.request.method.toString()
@@ -165,6 +176,11 @@ public class Router <: HttpRequestDistributor {
     /// 匹配所有 HTTP 方法
     public func all (path:String, handler:HandlerFunc) {
         this._group.handle("*", path, handler)
+    }
+
+    /// 添加路径重写规则（在路由匹配之前执行）
+    public func addRewriteRule(rule: (String) -> String): Unit {
+        this.rewriteRules.add(rule)
     }
 }
 
