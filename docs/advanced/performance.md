@@ -897,6 +897,7 @@ curl -H "Accept-Encoding: gzip" -I https://api.example.com/api/data
 
 ## 相关文档
 
+- **[性能基准测试](./benchmark.md)** - Tang vs stdx 性能对比测试结果
 - **[框架概述](../overview.md)** - Tang 的设计理念和性能特性
 - **[中间件概述](../middleware/overview.md)** - 中间件系统原理
 - **[Router API](../api/router.md)** - 路由系统 API

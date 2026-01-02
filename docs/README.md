@@ -46,6 +46,7 @@
 ### 高级主题
 
 - **[性能优化](advanced/performance.md)** - 性能调优指南
+- **[性能基准测试](advanced/benchmark.md)** - Tang vs stdx 性能对比
 
 ### 示例
 

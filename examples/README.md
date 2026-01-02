@@ -156,7 +156,21 @@ cjpm run
 
 ### 工具示例
 
-#### 9. [banner_test](./banner_test/) - Banner 和路由打印测试
+#### 9. [http_demo](./http_demo/) - stdx 标准库性能测试
+**说明**：
+- ✅ 使用 stdx.net.http 标准库构建
+- ✅ 用于性能基准测试对比
+- ✅ 与 Tang 框架进行性能对比
+
+**用途**：性能基准测试，详见 [性能基准测试文档](../docs/advanced/benchmark.md)
+
+```bash
+cd examples/http_demo
+cjpm run
+# 访问 http://localhost:10000/hello
+```
+
+#### 10. [banner_test](./banner_test/) - Banner 和路由打印测试
 **学习内容**：
 - ✅ 自动显示启动 Banner
 - ✅ 自动打印路由列表
@@ -171,7 +185,7 @@ cjpm run
 # 查看启动时的彩色 Banner 和路由表格
 ```
 
-#### 10. [app_demo](./app_demo/) - Tang 应用类演示
+#### 11. [app_demo](./app_demo/) - Tang 应用类演示
 **学习内容**：
 - ✅ `Tang` 应用类的完整用法
 - ✅ 配置选项（`withHost`、`withPort`、`withShowBanner` 等）
