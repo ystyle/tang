@@ -1,9 +1,6 @@
 package basic
 
 import std.collection.HashMap
-import stdx.log.LogLevel
-import tang.middleware.{exception.newRecovery, accesslog.accesslog, requestid.requestid}
-import stdx.net.http.{ServerBuilder, HttpContext}
 import tang.*
 
 func helloHandle(ctx: TangHttpContext): Unit {
@@ -11,26 +8,26 @@ func helloHandle(ctx: TangHttpContext): Unit {
 }
 
 main() {
-    // 创建路由
-    let r = Router(
-        use(
-            newRecovery(),// 放第一位，保证其它中间件也能正常执行
-            accesslog(), // 访问日志记录
-            requestid
-        )
-    )
+    // 创建 Tang 应用
+    let app = Tang([
+        withHost("127.0.0.1"),
+        withPort(10000u16),
+        withShowBanner(),
+        withShowRoutes()
+    ])
+
     // 声明接口
-    r.get("/hello", helloHandle)
+    app.get("/hello", helloHandle)
 
     // 创建分组
-    let group = r.group("/api")
-    
+    let group = app.group("/api")
+
     group.post("/user/create", {ctx =>
         let name = ctx.fromValue("username")
         ctx.responseBuilder.body(name ?? "null")
     })
 
-    
+
     // 静态路由
     group.get(
         "/user/current",
@@ -44,26 +41,23 @@ main() {
             _ => throw Exception("出现异常啦！")
         }
     )
-    
+
     // 命名路由
     group.get(
         "/user/:id",
         {
-            ctx => 
+            ctx =>
             let id = ctx.param("id")
             ctx.responseBuilder.body("current id: ${id}")
         }
     )
 
     // 通配符路由
-    group.get("/user_file/*path", {ctx => 
+    group.get("/user_file/*path", {ctx =>
        let mypath = ctx.param("path")
        ctx.writeString("path: ${mypath}")
     })
-    // 构建并启动服务
 
-    let server = ServerBuilder().distributor(r).addr("127.0.0.1").port(10000).build()
-    server.logger.level = LogLevel.ERROR
-    println("listening on http://localhost:${server.port}")
-    server.serve()
+    // 启动应用
+    app.listen()
 }

@@ -1,14 +1,17 @@
 package path_params
 
 import std.collection.HashMap
-import stdx.net.http.ServerBuilder
 import tang.*
 
 main() {
-    // 创建路由
-    let r = Router()
+    // 创建 Tang 应用
+    let app = Tang([
+        withHost("127.0.0.1"),
+        withPort(10000u16)
+    ])
+
     // 创建分组
-    let group = r.group("/api")
+    let group = app.group("/api")
     // 获取路径参数
     group.get(
         "/user/:id",
@@ -30,8 +33,6 @@ main() {
         }
     )
 
-    // 构建并启动服务
-    let server = ServerBuilder().distributor(r).addr("127.0.0.1").port(10000).build()
-    println("listening on http://localhost:${server.port}")
-    server.serve()
+    // 启动应用
+    app.listen()
 }

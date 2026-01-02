@@ -9,4 +9,5 @@ export let options = {
 export default function() {
     let res = http.get('http://127.0.0.1:10000/hello');
     check(res, { 'Query successfully': (resp) => resp.body == 'hello world!' });
+    sleep(10);
 }

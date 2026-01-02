@@ -50,7 +50,6 @@ public class Group {
                 if (p.isEmpty()) {
                     throw Exception("path can't be empty")
                 }
-                println("${meth}\t|\t${p}")
 
                 // 使用 radix tree 注册路由
                 let wrappedHandler = this.wrap(handler)

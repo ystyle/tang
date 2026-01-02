@@ -4,9 +4,9 @@ tang = { path = "../../" }
 [package]
 cjc-version = "0.59.6"
 compile-option = "--static -Woff unused"
-description = "nothing here"
+description = "Tang App class demo"
 link-option = ""
-name = "basic"
+name = "app_demo"
 output-type = "executable"
 src-dir = "src"
 target-dir = ""

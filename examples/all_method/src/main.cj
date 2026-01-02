@@ -1,10 +1,13 @@
 package all_method
 
-import stdx.net.http.ServerBuilder
 import tang.*
 
 main() {
-    let app = Router()
+    let app = Tang([
+        withHost("127.0.0.1"),
+        withPort(8080u16),
+        withShowBanner()
+    ])
 
     // 使用 all() 方法匹配所有 HTTP 方法
     // 适用于健康检查、CORS 预检等场景
@@ -23,14 +26,13 @@ main() {
         ctx.writeString("{\"version\":\"1.0.0\",\"framework\":\"Tang Web Framework\"}")
     })
 
-    // 启动服务器
-    let server = ServerBuilder().distributor(app).addr("127.0.0.1").port(8080).build()
-    println("Server listening on http://localhost:${server.port}")
     println("Try:")
     println("  curl http://localhost:8080/health")
     println("  curl -X POST http://localhost:8080/health")
     println("  curl -X PUT http://localhost:8080/health")
     println("  curl http://localhost:8080/api/version")
-    server.serve()
+
+    // 启动应用
+    app.listen()
 }
 

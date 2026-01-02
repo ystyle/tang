@@ -1,8 +1,9 @@
 package basicauth
 
 import tang.*
-import tang.middleware.{accesslog.logger, exception.exception, basicauth.newBasicAuth}
-import stdx.net.http.{ServerBuilder, HttpRequest}
+import tang.middleware.accesslog.logger
+import tang.middleware.exception.exception
+import tang.middleware.basicauth.newBasicAuth
 
 func authUser(ctx: TangHttpContext): Bool {
     if (let Some(userinfo) <- ctx.basicAuth()) {
@@ -12,21 +13,24 @@ func authUser(ctx: TangHttpContext): Bool {
 }
 
 main() {
-    let r = Router(
-        use(
-            exception,
-            newBasicAuth(authUser),
-            logger
-        )
-    )
-    let group = r.group("/api")
+    let app = Tang([
+        withHost("127.0.0.1"),
+        withPort(10000u16)
+    ])
+
+    // 应用中间件
+    app.use(exception())
+    app.use(newBasicAuth(authUser))
+    app.use(logger())
+
+    let group = app.group("/api")
     group.get(
         "/user/current",
         {
             ctx => ctx.writeString("hello world!")
         }
     )
-    let server = ServerBuilder().distributor(r).addr("127.0.0.1").port(10000).build()
-    println("listening on http://localhost:${server.port}")
-    server.serve()
+
+    // 启动应用
+    app.listen()
 }

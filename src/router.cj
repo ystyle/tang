@@ -19,8 +19,6 @@ public class Router <: HttpRequestDistributor {
     var rewriteRules: ArrayList<(String) -> String> = ArrayList<(String) -> String>()  // 路径重写规则
 
     public init() {
-        println("\tTang Web Frameworks")
-        println("method\t|\tpath")
         this.tree = RouteNode("")
         this._group = Group()
         this.config = Config(this._group)
@@ -181,6 +179,16 @@ public class Router <: HttpRequestDistributor {
     /// 添加路径重写规则（在路由匹配之前执行）
     public func addRewriteRule(rule: (String) -> String): Unit {
         this.rewriteRules.add(rule)
+    }
+
+    /// 打印启动 Banner
+    public func printBanner(version!: String = TANG_VERSION, port!: UInt16 = 8080) {
+        BannerPrinter.printBanner(version: version, port: port)
+    }
+
+    /// 打印所有注册的路由
+    public func printRoutes() {
+        BannerPrinter.printRoutes(this.handlers)
     }
 }
 

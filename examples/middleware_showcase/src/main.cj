@@ -4,7 +4,6 @@ import std.collection.HashMap
 import std.collection.ArrayList
 import std.time.DateTime
 import stdx.log.LogLevel
-import stdx.net.http.ServerBuilder
 import stdx.encoding.hex.{fromHexString, toHexString}
 import tang.*
 
@@ -33,7 +32,7 @@ import tang.middleware.idempotency.{idempotency, withLifetime, withKeyHeader, Id
 import tang.middleware.proxy.{proxy, withBackend, withStripPrefix, LoadBalanceStrategy}
 
 main() {
-    // 创建路由器，应用全局中间件
+    // 创建 Tang 应用，应用全局中间件
     //
     // 中间件执行顺序很重要：
     // 1. recovery 应该放在最外层，捕获所有异常
@@ -46,44 +45,48 @@ main() {
     // 8. cache 缓存控制
     // 9. etag 缓存验证
     // 注意：KeyAuth 不在全局应用，在特定路由上测试
-    let r = Router(
-        use([
-            favicon(),                            // 0. Favicon 处理（优先级高）
-            recovery(),                           // 1. 异常恢复（必须放在最外层）
-            accesslog(),                          // 2. 访问日志
-            requestid(),
-            rateLimit([                           // 4. 限流（每分钟 100 个请求）
-                withMaxRequests(100)
-            ]),
-            bodyLimit([                           // 5. 请求体限制（最大 10MB）
-                withMaxSize(10 * 1024 * 1024)
-            ]),
-            newCors([                             // 6. CORS 跨域支持
-                withAllowAllOrigins(),            //    允许所有来源
-                withAllowCredentials()            //    允许携带凭证
-            ]),
-            security([withStrictSecurity()]),     // 7. 安全头（严格策略）
-            cache([                               // 8. Cache 缓存控制
-                withDuration(3600),               //     默认缓存 1 小时
-                withExcludePath("/test/nocache"), //     排除手动设置 header 的路径
-                withRules([
-                    CacheRule("/api/*", 0),       // API 不缓存
-                    CacheRule("/static/*", 86400) // 静态文件缓存 1 天
-                ])
-            ]),
-            etag(),                               // 9. ETag 缓存验证
-            timeout(withTimeout(2000))
+    let app = Tang([
+        withHost("127.0.0.1"),
+        withPort(10001u16),
+        withShowBanner(),
+        withShowRoutes()
+    ])
+
+    // 应用全局中间件
+    app.use(favicon())                           // 0. Favicon 处理（优先级高）
+    app.use(recovery())                          // 1. 异常恢复（必须放在最外层）
+    app.use(accesslog())                         // 2. 访问日志
+    app.use(requestid())
+    app.use(rateLimit([                           // 4. 限流（每分钟 100 个请求）
+        withMaxRequests(100)
+    ]))
+    app.use(bodyLimit([                           // 5. 请求体限制（最大 10MB）
+        withMaxSize(10 * 1024 * 1024)
+    ]))
+    app.use(newCors([                             // 6. CORS 跨域支持
+        withAllowAllOrigins(),            //    允许所有来源
+        withAllowCredentials()            //    允许携带凭证
+    ]))
+    app.use(security([withStrictSecurity()]))     // 7. 安全头（严格策略）
+    app.use(cache([                               // 8. Cache 缓存控制
+        withDuration(3600),               //     默认缓存 1 小时
+        withExcludePath("/test/nocache"), //     排除手动设置 header 的路径
+        withRules([
+            CacheRule("/api/*", 0),       // API 不缓存
+            CacheRule("/static/*", 86400) // 静态文件缓存 1 天
         ])
-    )
+    ]))
+    app.use(etag())                               // 9. ETag 缓存验证
+    app.use(timeout(withTimeout(2000)))
 
     // 添加路径重写规则（在路由匹配之前执行）
-    r.addRewriteRule(createRewriteFunction("/api/v1/(.*)", "/api/v2/$1"))
-    r.addRewriteRule(createRewriteFunction("/old/api/(.*)", "/api/$1"))
+    app.addRewriteRule(createRewriteFunction("/api/v1/(.*)", "/api/v2/$1"))
+    app.addRewriteRule(createRewriteFunction("/old/api/(.*)", "/api/$1"))
 
     // ============ 测试路由 ============
 
     // 基础路由：返回请求 ID
-    r.get("/", { ctx =>
+app.get("/", { ctx =>
         let rid = ctx.requestid()
         let ridStr = match (rid) {
             case Some(v) => v
@@ -126,21 +129,21 @@ main() {
 
     // ============ 新中间件测试路由（待解决模块导出问题）===========
     // 健康检查
-    r.get("/health", healthcheck())
+app.get("/health", healthcheck())
 
     // 带自定义检查的健康检查
-    r.get("/health/full", healthcheck([
+app.get("/health/full", healthcheck([
         withLivenessCheck({ ctx => true }),
         withReadinessCheck({ ctx => true }),
         withSystemInfo()
     ]))
 
     // 重定向测试
-    r.get("/old-path", redirect(url: "/new-path", statusCode: 301))
-    r.get("/new-path", { ctx => ctx.responseBuilder.body("This is the new path!\n") })
+app.get("/old-path", redirect(url: "/new-path", statusCode: 301))
+app.get("/new-path", { ctx => ctx.responseBuilder.body("This is the new path!\n") })
 
     // 超时测试
-    r.get("/api/slow", { ctx =>
+app.get("/api/slow", { ctx =>
         // 模拟慢操作
         sleep(Duration.second * 1)
 
@@ -157,7 +160,7 @@ main() {
 
     // ========== KeyAuth 测试 ==========
     // 公开端点（不需要认证）
-    r.get("/test/keyauth", { ctx =>
+app.get("/test/keyauth", { ctx =>
         ctx.json(HashMap<String, String>([
             ("message", "This is a public endpoint"),
             ("auth", "not required"),
@@ -187,7 +190,7 @@ main() {
     // 这里只需要注册目标路由即可
 
     // ========== Cache 测试 ==========
-    r.get("/test/cache", { ctx =>
+app.get("/test/cache", { ctx =>
         ctx.json(HashMap<String, String>([
             ("message", "This response is cached for 1 hour"),
             ("cache-control", "max-age=3600"),
@@ -195,7 +198,7 @@ main() {
         ]))
     })
 
-    r.get("/test/nocache", { ctx =>
+app.get("/test/nocache", { ctx =>
         // 手动设置 Cache-Control header（中间件已排除此路径）
         ctx.responseBuilder.header("Cache-Control", "no-store, no-cache, must-revalidate")
         ctx.json(HashMap<String, String>([
@@ -205,7 +208,7 @@ main() {
     })
 
     // ========== ETag 测试 ==========
-    r.get("/test/etag", { ctx =>
+app.get("/test/etag", { ctx =>
         ctx.json(HashMap<String, String>([
             ("message", "This response includes ETag header"),
             ("timestamp", "${DateTime.now()}"),
@@ -263,7 +266,7 @@ main() {
     })
 
     // 公开端点（不需要 CSRF token）
-    r.get("/test/csrf/public", { ctx =>
+app.get("/test/csrf/public", { ctx =>
         ctx.json(HashMap<String, String>([
             ("message", "This is a public endpoint"),
             ("csrf", "not required"),
@@ -302,11 +305,11 @@ main() {
             s.data.set("username", "testuser")
             s.data.set("loginTime", "${DateTime.now()}")
         }
-        ctx.json(HashMap<String, String>([
+        ctx.json(HashMap<String, String>(
             ("message", "Session created successfully"),
             ("action", "login"),
             ("hint", "Session data stored: userId, username, loginTime")
-        ]))
+        ))
     })
 
     // 读取 session
@@ -345,7 +348,7 @@ main() {
     })
 
     // ========== EncryptCookie 测试 ==========
-    r.get("/test/encryptcookie/set", { ctx =>
+app.get("/test/encryptcookie/set", { ctx =>
         // 由于当前框架限制，这里只展示说明
         // 实际使用时需要在应用路由前添加 encryptCookie 中间件
         ctx.json(HashMap<String, String>([
@@ -357,7 +360,7 @@ main() {
         ]))
     })
 
-    r.get("/test/encryptcookie/get", { ctx =>
+app.get("/test/encryptcookie/get", { ctx =>
         // 读取 cookie（会自动解密）
         let testCookie = ctx.cookie("test_cookie")
         let cookieValue = match (testCookie) {
@@ -455,7 +458,7 @@ main() {
     })
 
     // Favicon 测试 - 直接路由处理器
-    r.get("/favicon.ico", { ctx =>
+app.get("/favicon.ico", { ctx =>
         // 1x1 透明 GIF
         let gifData = Array<UInt8>(35, { i =>
             [0x47u8, 0x49u8, 0x46u8, 0x38u8, 0x39u8, 0x61u8, 0x01u8, 0x00u8,
@@ -473,7 +476,7 @@ main() {
     // ============ 原有 API 路由 ============
 
     // API 信息路由
-    r.get("/api/info", { ctx =>
+app.get("/api/info", { ctx =>
         let rid = ctx.requestid()
         let ridStr = rid ?? "unknown"
         let clientIP = ctx.request.headers.getFirst("X-Real-IP") ?? ctx.request.headers.getFirst("X-Forwarded-For") ?? ctx.request.remoteAddr
@@ -554,12 +557,12 @@ main() {
 
     // 静态文件服务（从 public 目录提供文件）
     // 使用绝对路径避免工作目录问题
-    r.get("/static/*", staticFiles("/home/ystyle/Code/CangJie/online/tang/examples/middleware_showcase/public", [withPrefix("/static")]))
-    r.get("/static", staticFiles("/home/ystyle/Code/CangJie/online/tang/examples/middleware_showcase/public", [withPrefix("/static")]))
+app.get("/static/*", staticFiles("/home/ystyle/Code/CangJie/online/tang/examples/middleware_showcase/public", [withPrefix("/static")]))
+app.get("/static", staticFiles("/home/ystyle/Code/CangJie/online/tang/examples/middleware_showcase/public", [withPrefix("/static")]))
 
     // 为所有路径添加 OPTIONS 处理器，让 CORS 中间件能够处理预检请求
     // 注意：需要为每个路径前缀注册 OPTIONS 路由，因为 radix tree 的 /* 只匹配单层路径
-    r.options("/*", { ctx =>
+app.options("/*", { ctx =>
         ctx.responseBuilder.body("")
     })
     api.options("/*", { ctx =>
@@ -568,93 +571,84 @@ main() {
 
     // ============ 启动服务器 ============
 
-    let server = ServerBuilder()
-        .distributor(r)
-        .addr("127.0.0.1")
-        .port(10001)
-        .build()
-
-    // 设置日志级别为 INFO，以便看到中间件日志
-    server.logger.level = LogLevel.INFO
-
     println("========================================")
     println("  Tang Middleware Showcase Server")
     println("========================================")
     println("")
-    println("Server running at: http://localhost:${server.port}")
+    println("Server running at: http://localhost:10001")
     println("")
     println("🔐 Middleware Testing Guide:")
     println("")
     println("[KeyAuth Test]")
-    println("  curl http://localhost:${server.port}/test/keyauth")
-    println("  curl -H 'X-API-Key: test-secret-key-12345' http://localhost:${server.port}/test/keyauth/protected")
+    println("  curl http://localhost:10001/test/keyauth")
+    println("  curl -H 'X-API-Key: test-secret-key-12345' http://localhost:10001/test/keyauth/protected")
     println("")
     println("[Rewrite Test]")
-    println("  curl http://localhost:${server.port}/old/api/data")
-    println("  curl http://localhost:${server.port}/api/v1/users")
+    println("  curl http://localhost:10001/old/api/data")
+    println("  curl http://localhost:10001/api/v1/users")
     println("")
     println("[Cache Test]")
-    println("  curl -I http://localhost:${server.port}/test/cache")
-    println("  curl -I http://localhost:${server.port}/test/nocache")
+    println("  curl -I http://localhost:10001/test/cache")
+    println("  curl -I http://localhost:10001/test/nocache")
     println("")
     println("[ETag Test]")
-    println("  curl -I http://localhost:${server.port}/test/etag")
+    println("  curl -I http://localhost:10001/test/etag")
     println("")
     println("========== New Security Middlewares (Third Batch) ==========")
     println("")
     println("[CSRF Test]")
     println("  # 1. Get CSRF token")
-    println("  curl http://localhost:${server.port}/test/csrf/token")
+    println("  curl http://localhost:10001/test/csrf/token")
     println("")
     println("  # 2. Use token in protected endpoint")
-    println("  curl -H 'X-CSRF-Token: <token>' http://localhost:${server.port}/test/csrf/protected")
+    println("  curl -H 'X-CSRF-Token: <token>' http://localhost:10001/test/csrf/protected")
     println("")
     println("  # 3. Public endpoint (no token needed)")
-    println("  curl http://localhost:${server.port}/test/csrf/public")
+    println("  curl http://localhost:10001/test/csrf/public")
     println("")
     println("[Session Test]")
     println("  # 1. Create session")
-    println("  curl -c cookies.txt http://localhost:${server.port}/test/session/login -X POST")
+    println("  curl -c cookies.txt http://localhost:10001/test/session/login -X POST")
     println("")
     println("  # 2. Read session")
-    println("  curl -b cookies.txt http://localhost:${server.port}/test/session/profile")
+    println("  curl -b cookies.txt http://localhost:10001/test/session/profile")
     println("")
     println("  # 3. Clear session")
-    println("  curl -b cookies.txt http://localhost:${server.port}/test/session/logout -X POST")
+    println("  curl -b cookies.txt http://localhost:10001/test/session/logout -X POST")
     println("")
     println("[EncryptCookie Test]")
     println("  # Note: Due to framework limitations, this is a demonstration endpoint")
-    println("  curl http://localhost:${server.port}/test/encryptcookie/set")
+    println("  curl http://localhost:10001/test/encryptcookie/set")
     println("")
     println("========== New Advanced Middlewares (Fourth Batch) ==========")
     println("")
     println("[Idempotency Test]")
     println("  # 1. GET request (no idempotency key needed)")
-    println("  curl http://localhost:${server.port}/test/idempotency/info")
+    println("  curl http://localhost:10001/test/idempotency/info")
     println("")
     println("  # 2. First payment request (with idempotency key)")
-    println("  curl -H 'X-Idempotency-Key: unique-key-123' -X POST http://localhost:${server.port}/test/idempotency/payment")
+    println("  curl -H 'X-Idempotency-Key: unique-key-123' -X POST http://localhost:10001/test/idempotency/payment")
     println("")
     println("  # 3. Second request with same key (should return cached response)")
-    println("  curl -H 'X-Idempotency-Key: unique-key-123' -X POST http://localhost:${server.port}/test/idempotency/payment")
+    println("  curl -H 'X-Idempotency-Key: unique-key-123' -X POST http://localhost:10001/test/idempotency/payment")
     println("")
     println("  # 4. Order creation test")
-    println("  curl -H 'X-Idempotency-Key: order-key-456' -X POST http://localhost:${server.port}/test/idempotency/order")
+    println("  curl -H 'X-Idempotency-Key: order-key-456' -X POST http://localhost:10001/test/idempotency/order")
     println("")
     println("[Proxy Test]")
     println("  # 1. Proxy GET request (forwards to /api/info)")
-    println("  curl http://localhost:${server.port}/test/proxy/api/info")
+    println("  curl http://localhost:10001/test/proxy/api/info")
     println("")
     println("  # 2. Proxy POST request")
-    println("  curl -X POST -H 'Content-Type: application/json' -d '{\"test\":\"data\"}' http://localhost:${server.port}/test/proxy/api/test-cache")
+    println("  curl -X POST -H 'Content-Type: application/json' -d '{\"test\":\"data\"}' http://localhost:10001/test/proxy/api/test-cache")
     println("")
     println("  # 3. WebSocket Upgrade test (should return 426 error)")
-    println("  curl -H 'Upgrade: websocket' http://localhost:${server.port}/test/proxy/api/info")
+    println("  curl -H 'Upgrade: websocket' http://localhost:10001/test/proxy/api/info")
     println("")
     println("Press Ctrl+C to stop the server")
     println("========================================")
     println("")
-    
-    server.logger.level = LogLevel.ERROR
-    server.serve()
+
+    // 启动应用
+    app.listen()
 }

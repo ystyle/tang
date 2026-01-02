@@ -602,7 +602,50 @@ let l = rec.height  // l = 20
 - HashSet：希望每个元素都是唯一的
 - HashMap：希望存储一系列的映射关系
 
-## 9. 单元测试
+## 10. 包
+
+### 声明
+```cj
+// The directory structure is as follows:
+src
+`-- directory_0
+    |-- directory_1
+    |    |-- a.cj
+    |    `-- b.cj
+    `-- c.cj
+`-- main.cj
+
+
+// a.cj
+package demo.directory_0.directory_1
+// b.cj
+package demo.directory_0.directory_1
+// c.cj
+package demo.directory_0
+// main.cj
+package demo
+
+package demo      // root 包 demo
+package demo.directory_0 // root 包 demo 的子包 directory_0
+```
+
+### 导入
+```cj
+package a
+import std.math.*
+import package1.foo
+import {package1.foo, package2.bar, package1.MyClass}
+
+
+直接使用导入的方法，类型
+func test() {
+    let a = pow(1,2) // std.math.pow
+    foo() // 方法
+    let b = MyClass()
+}
+```
+
+## 11. 单元测试
 
 ### 测试宏
 

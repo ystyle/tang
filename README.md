@@ -1,229 +1,180 @@
-### Tang
-> 一个仓颉的轻量级 Web 框架，初始版本移植自 [uptrace/bunrouter](https://github.com/uptrace/bunrouter)
->
-> **状态**：开发中（API 不稳定，不建议用于生产环境）
+# Tang
 
-### 特性
-- **Radix Tree 路由**：基于基数树的高效路由实现，支持复杂路由规则
-- **路由优先级**：静态路径 > 命名参数 > 通配符，智能匹配
-- **路由分组**：支持分组路由，便于组织 API
-- **中间件系统**：可复用的中间件机制
-- **参数绑定**：支持 query 参数和 JSON body 绑定到 class
-- **JSON 响应**：支持直接使用 class 返回 JSON
+> 一个基于仓颉语言的高性能 Web 框架，受 [Fiber](https://github.com/gofiber/fiber) 启发
 
-### 安装依赖
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](../LICENSE)
+[![Cangjie](https://img.shields.io/badge/Cangjie-1.0.0+-orange.svg)](https://cangjie-lang.cn)
+
+## ✨ 特性
+
+- **🚀 高性能路由** - 基于 Radix Tree 实现，O(k) 查找复杂度
+- **⛓️ 链式 API** - Fiber 风格的流畅 API 设计
+- **🔌 中间件生态** - 23+ 内置中间件，覆盖常见场景
+- **📦 开箱即用** - JSON 解析、Cookie、会话管理等内置功能
+- **💡 简洁易用** - 清晰的 API 设计，快速上手
+
+## 📦 安装
+
 ```toml
 [dependencies]
-  tang = { git = "https://github.com/ystyle/tang", branch = "master"}
+tang = { git = "https://github.com/ystyle/tang", branch = "master" }
 ```
 
-### 示例
+## 🚀 快速开始
+
+### Hello World
+
 ```cj
 import tang.*
-import tang.middleware.{accesslog.logger, exception.exception, requestid.requestid}
-import stdx.net.http.ServerBuilder
 import std.collection.HashMap
 
-func helloHandle(ctx: TangHttpContext): Unit {
-    ctx.writeString("hello world!")
+main() {
+    let app = Tang()
+
+    app.get("/", { ctx =>
+        ctx.writeString("Hello, Tang!")
+    })
+
+    app.listen(port: 8080)
 }
+```
+
+### REST API 示例
+
+```cj
+import tang.*
+import std.collection.HashMap
 
 main() {
-    // 创建路由
-    let r = Router(
-        use(
-            exception, // 放第一位，保证其它中间件也能正常执行
-            logger, // 访问日志记录
-            requestid
-        )
-    )
-    // 声明接口
-    r.get("/hello", helloHandle)
+    let app = Tang()
 
-    // 创建分组
-    let group = r.group("/api")
-    // 命名路由
-    group.get(
-        "/user/:id",
-        {
-            ctx => 
-            let id = ctx.param("id")
-            ctx.responseBuilder.body("current id: ${id}")
-        }
-    )
-    // 静态路由
-    group.get(
-        "/user/current",
-        {
-            ctx => ctx.responseBuilder.body("current user: ystyle")
-        }
-    )
-    group.get(
-        "/user/exception",
-        {
-            ctx => throw Exception("出现异常啦！")
-        }
-    )
-    // 通配符路由
-    group.get("/user/*path", {ctx =>
-       let path = ctx.param("path")
-       ctx.writeString("path: ${path}")
+    // GET 请求
+    app.get("/users/:id", { ctx =>
+        let id = ctx.param("id")
+        ctx.json(HashMap<String, String>([
+            ("userId", id),
+            ("name", "Alice")
+        ]))
     })
-    // 构建并启动服务
 
-    let server = ServerBuilder().distributor(r).addr("127.0.0.1").port(10000).build()
-    println("listening on http://localhost:${server.port}")
-    server.serve()
+    // POST 请求
+    app.post("/users", { ctx =>
+        let body = ctx.fromValue("name") ?? ""
+        // 创建用户...
+        ctx.status(201u16).json(HashMap<String, String>([
+            ("message", "User created"),
+            ("name", body)
+        ]))
+    })
+
+    app.listen()
 }
 ```
 
-### 路由规则
+### 中间件使用
 
-Tang 使用 Radix Tree（基数树）实现高效路由匹配，支持以下路由类型：
-
-#### 1. 静态路由
-精确匹配的路径，优先级最高：
 ```cj
-r.get("/user/current", { ctx => ... })
-r.get("/api/users", { ctx => ... })
+import tang.*
+import tang.middleware.recovery.recovery
+import tang.middleware.log.logger
+import tang.middleware.cors.cors
+
+main() {
+    let app = Tang()
+
+    // 全局中间件
+    app.use(recovery())
+    app.use(logger())
+    app.use(cors())
+
+    // 路由组
+    let api = app.group("/api")
+
+    api.get("/data", { ctx =>
+        ctx.json(HashMap<String, String>([
+            ("message", "API data")
+        ]))
+    })
+
+    app.listen()
+}
 ```
 
-#### 2. 命名参数路由
-使用 `:name` 语法捕获路径参数：
+## 📚 文档
+
+完整文档请查看：[**📖 docs/**](./docs/)
+
+### 核心文档
+
+- **[快速入门](./docs/getting-started.md)** - 5 分钟上手 Tang 框架
+- **[框架概述](./docs/overview.md)** - 设计理念和核心概念
+- **[API 参考](./docs/api/)** - Router、Group、Context API 文档
+- **[中间件文档](./docs/middleware/)** - 23+ 内置中间件使用指南
+- **[性能优化](./docs/advanced/performance.md)** - 生产环境性能调优
+
+### 中间件列表
+
+**安全类**：Security、CORS、CSRF、BasicAuth、KeyAuth、EncryptCookie
+
+**日志监控**：Logger、AccessLog、RequestID、Recovery
+
+**流量控制**：RateLimit、BodyLimit、Timeout
+
+**缓存优化**：Cache、ETag
+
+**会话管理**：Session
+
+**其他**：Proxy、Redirect、Rewrite、StaticFile、Favicon、HealthCheck、Idempotency
+
+## 🎯 路由特性
+
+### 静态路由
+
 ```cj
-r.get("/user/:id", { ctx =>
-    let id = ctx.param("id")  // 获取参数值
-    // ...
+r.get("/users/profile", handler)  // 精确匹配
+```
+
+### 动态参数
+
+```cj
+r.get("/users/:id", { ctx =>
+    let id = ctx.param("id")  // 捕获路径参数
 })
 ```
-匹配示例：
-- `/user/123` → `id = "123"`
-- `/user/abc` → `id = "abc"`
 
-#### 3. 通配符路由
-使用 `*name` 语法捕获剩余所有路径：
+### 通配符
+
 ```cj
-r.get("/files/*path", { ctx =>
-    let path = ctx.param("path")  // 获取剩余路径
-    // ...
+r.get("/files/*", { ctx =>
+    let path = ctx.param("*")  // 匹配剩余所有路径
 })
 ```
-匹配示例：
-- `/files/docs/file.txt` → `path = "docs/file.txt"`
-- `/files/a/b/c` → `path = "a/b/c"`
 
-#### 4. 路由优先级
-
-当多个路由可能匹配同一路径时，按以下优先级选择：
-
-1. **静态路由**（最高）
-   - `/user/current` 优先于 `/user/:id`
-
-2. **命名参数路由**
-   - 单段路径（如 `/user/123`）优先匹配参数路由
-
-3. **通配符路由**（最低）
-   - 多段路径（如 `/user/files/docs`）匹配通配符路由
-
-示例：
-```cj
-// 假设注册了以下路由
-r.get("/user/current", { ... })      // 静态路由
-r.get("/user/:id", { ... })          // 参数路由
-r.get("/user/*path", { ... })        // 通配符路由
-
-// 匹配结果：
-// /user/current  → 静态路由（优先级最高）
-// /user/123      → 参数路由（单段路径）
-// /user/a/b      → 通配符路由（多段路径）
-```
-
-#### 5. 性能特性
-
-- **时间复杂度**：O(k)，其中 k 为路径长度
-- **空间优化**：Radix Tree 自动压缩公共前缀
-- **快速查找**：树形结构，避免线性遍历
-
-### 仓颉版本支持情况
-master 当前配置0.59.6, 配置过的仓颉版本已用分支归档, 以仓颉版本号为分支名称.
-
-
-### 部署
-
-生产环境部署建议请查看 [部署文档](docs/deployment.md)，包括：
-- Gzip 压缩配置
-- 反向代理配置
-- 性能优化建议
-- 安全配置建议
-
-### 更多示例
-更多示例请查看 [examples](/examples/) 目录
-
-### 中间件
-
-#### 内置中间件
-
-Tang 提供以下中间件：
-
-- **[accesslog](/src/middleware/accesslog/)**: HTTP 访问日志记录
-  - 记录请求方法、路径、延迟、状态码
-  - 自动集成 requestid（如果启用）
-  - 支持结构化日志输出
-
-- **[requestid](/src/middleware/requestid/)**: 请求 ID 生成
-  - 为每个请求生成唯一 ID（使用 Sonyflake 算法）
-  - 存储到 Context 的 KV 存储中
-  - 其他中间件可通过 `ctx.requestid()` 访问
-
-- **[exception](/src/middleware/exception/)**: 全局异常处理
-  - 捕获未处理的异常
-  - 记录错误日志
-  - 返回 500 错误响应
-
-- **[basicauth](/src/middleware/basicauth/)**: HTTP Basic 认证
-  - 标准的 Basic 认证支持
-  - 可自定义认证逻辑
-  - 支持 realm 配置
-
-- **[cors](/src/middleware/cors/)**: CORS 跨域支持
-  - 支持自定义允许的来源、方法、头
-  - 支持预检请求（OPTIONS）
-  - 支持凭证模式
-
-- **[security](/src/middleware/security/)**: 安全响应头
-  - 提供常见安全响应头（X-Frame-Options, X-Content-Type-Options 等）
-  - 支持预设安全策略
-  - 可自定义安全头
-
-> **💡 提示**：Gzip 压缩推荐在 Nginx 或反向代理层配置，参见 [部署建议](docs/deployment.md)
-
-#### Context 扩展机制
-
-Tang 使用仓颉的**同包直接扩展**机制提供便捷的 Context 方法：
+### 路由分组
 
 ```cj
-// src/context_extensions.cj
-extend TangHttpContext {
-    public func requestid(): ?String {
-        return this.kvGet<String>("requestid")
-    }
-}
+let api = r.group("/api")
+api.use(cors())  // 应用到整个组
+
+let v1 = api.group("/v1")
+v1.get("/users", handler)  // 实际路径: /api/v1/users
 ```
 
-**扩展规则：**
-- 同包扩展自动导出，无需导入接口
-- 中间件通过 `ctx.kvSet(key, value)` 存储数据
-- 其他中间件通过扩展方法（如 `ctx.requestid()`）访问数据
-- 企业级框架可在自己的包中使用接口扩展 TangHttpContext
+## 📁 示例代码
 
-**中间件通信示例：**
-```cj
-// requestid 中间件存储数据
-ctx.kvSet("requestid", "${id}")
+- **[Hello World](./examples/basic/)** - 最小示例
+- **[REST API](./examples/todo/)** - Todo REST API 示例
+- **[中间件演示](./examples/middleware_showcase/)** - 23+ 中间件完整演示
 
-// accesslog 中间件读取数据
-let rid = ctx.requestid()
-if (let Some(v) <- rid) {
-    attrs.add(("requestid", v))
-}
-```
+## 🔗 相关链接
+
+- **[仓颉语言](https://cangjie-lang.cn)** - 仓颉编程语言官网
+- **[Fiber 框架](https://github.com/gofiber/fiber)** - Go 语言 Web 框架（设计灵感来源）
+
+## 📝 许可证
+
+[MIT License](../LICENSE)
+
+---
+
+**开始使用**：查看 [**快速入门文档**](./docs/getting-started.md) 🚀

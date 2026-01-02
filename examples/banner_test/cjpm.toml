@@ -3,10 +3,10 @@ tang = { path = "../../" }
 
 [package]
 cjc-version = "0.59.6"
-compile-option = "--static -Woff unused"
-description = "nothing here"
+compile-option = "--static"
+description = "Banner and route printing example"
 link-option = ""
-name = "basic"
+name = "banner_test"
 output-type = "executable"
 src-dir = "src"
 target-dir = ""

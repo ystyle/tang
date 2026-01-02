@@ -28,11 +28,6 @@ extend TangHttpContext {
         return this
     }
 
-    /// 设置 Content-Type 响应头（链式调用，type 的别名）
-    public func `type`(contentType: String): TangHttpContext {
-        this.contentType(contentType)
-    }
-
     /// 发送状态码响应（终结方法）
     public func sendStatus(code: UInt16): Unit {
         this.responseBuilder.status(code).body("")

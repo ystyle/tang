@@ -1,7 +1,6 @@
 package json
 
 import std.collection.HashMap
-import stdx.net.http.ServerBuilder
 import stdx.serialization.serialization.*
 import tang.*
 
@@ -27,10 +26,14 @@ class User <: Serializable<User>  {
 }
 
 main() {
-    // 创建路由
-    let r = Router()
+    // 创建 Tang 应用
+    let app = Tang([
+        withHost("127.0.0.1"),
+        withPort(10000u16)
+    ])
+
     // 创建分组
-    let group = r.group("/api")
+    let group = app.group("/api")
     // 静态路由
     group.get(
         "/user/current",
@@ -44,8 +47,6 @@ main() {
         }
     )
 
-    // 构建并启动服务
-    let server = ServerBuilder().distributor(r).addr("127.0.0.1").port(10000).build()
-    println("listening on http://localhost:${server.port}")
-    server.serve()
+    // 启动应用
+    app.listen()
 }
