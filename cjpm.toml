@@ -15,7 +15,7 @@
   version = "1.0.0"
   include = ["src"]
   exclude = ["examples/basic/results.csv"]
-  license = ["MulanPSL2"]
+  license = ["MulanPSL-2.0"]
   authors = ["ystyle"]
   repository = ["https://atomgit.com/ystyle/tang"]
 
