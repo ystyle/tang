@@ -25,7 +25,7 @@ class BannerPrinter {
     public static let DIM: String = String.fromUtf8([0x1Bu8, 0x5B, 0x32, 0x6D]) // \u001b[2m
 
     /// 打印 Tang Banner
-    public static func printBanner(version!: String = TANG_VERSION, port!: UInt16 = 8080) {
+    public static func printBanner(version!: String = TANG_VERSION, port!: UInt16 = 8080): Unit {
         let supportColor = supportsColor()
 
         if (!supportColor) {
@@ -57,7 +57,7 @@ class BannerPrinter {
     }
 
     /// 无颜色的简单 Banner
-    public static func printSimpleBanner(version: String, port: UInt16) {
+    public static func printSimpleBanner(version: String, port: UInt16): Unit {
         println("")
         println(" _____  _    _   _  ____")
         println("|_   _|/ \\  | \\ | |/ ___|")
@@ -83,7 +83,7 @@ class BannerPrinter {
     }
 
     /// 打印路由表格
-    public static func printRoutes(handlers: HashMap<String, HandlerFunc>) {
+    public static func printRoutes(handlers: HashMap<String, HandlerFunc>): Unit {
         let supportColor = supportsColor()
 
         if (handlers.size == 0) {

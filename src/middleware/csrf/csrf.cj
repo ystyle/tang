@@ -114,7 +114,7 @@ public class CSRFConfig {
     }
 
     /// 生成 CSRF token
-    public func generateToken(ctx: TangHttpContext): String {
+    public func generateToken(_: TangHttpContext): String {
         // 生成随机 token
         let randomBytes = SecureRandom().nextBytes(this.tokenLength)
         let token = toHexString(randomBytes)
@@ -129,7 +129,7 @@ public class CSRFConfig {
     }
 
     /// 验证 CSRF token
-    public func validateToken(token: String, ctx: TangHttpContext): Bool {
+    public func validateToken(token: String, _: TangHttpContext): Bool {
         let parts = token.split(".")
         if (parts.size != 3) {
             return false

@@ -20,14 +20,14 @@ public class TangLogerConfig {
     public func setLogLevel(lv:LogLevel):Unit {
         this.defaultLogLevel = lv
     }
-    public func setOuput(output:OutputStream) {
+    public func setOuput(output: OutputStream): Unit {
         this.output = output
     }
 }
 
 var defaultconfig = TangLogerConfig()
 
-public func setLogConfig(config:TangLogerConfig) {
+public func setLogConfig(config: TangLogerConfig): Unit {
     defaultconfig = config
 }
 

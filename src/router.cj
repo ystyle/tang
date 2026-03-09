@@ -145,31 +145,31 @@ public class Router <: HttpRequestDistributor {
         return None
     }
 
-    public func get (path:String, handler:HandlerFunc) {
+    public func get(path: String, handler: HandlerFunc): Unit {
         this._group.handle("GET", path, handler)
     }
 
-    public func post (path:String, handler:HandlerFunc) {
+    public func post(path: String, handler: HandlerFunc): Unit {
         this._group.handle("POST", path, handler)
     }
-    public func put (path:String, handler:HandlerFunc) {
+    public func put(path: String, handler: HandlerFunc): Unit {
         this._group.handle("PUT", path, handler)
     }
-    public func delete (path:String, handler:HandlerFunc) {
+    public func delete(path: String, handler: HandlerFunc): Unit {
         this._group.handle("DELETE", path, handler)
     }
-    public func patch (path:String, handler:HandlerFunc) {
+    public func patch(path: String, handler: HandlerFunc): Unit {
         this._group.handle("PATCH", path, handler)
     }
-    public func head (path:String, handler:HandlerFunc) {
+    public func head(path: String, handler: HandlerFunc): Unit {
         this._group.handle("HEAD", path, handler)
     }
-    public func options (path:String, handler:HandlerFunc) {
+    public func options(path: String, handler: HandlerFunc): Unit {
         this._group.handle("OPTIONS", path, handler)
     }
 
     /// 匹配所有 HTTP 方法
-    public func all (path:String, handler:HandlerFunc) {
+    public func all(path: String, handler: HandlerFunc): Unit {
         this._group.handle("*", path, handler)
     }
 
@@ -179,12 +179,12 @@ public class Router <: HttpRequestDistributor {
     }
 
     /// 打印启动 Banner
-    public func printBanner(version!: String = TANG_VERSION, port!: UInt16 = 8080) {
+    public func printBanner(version!: String = TANG_VERSION, port!: UInt16 = 8080): Unit {
         BannerPrinter.printBanner(version: version, port: port)
     }
 
     /// 打印所有注册的路由
-    public func printRoutes() {
+    public func printRoutes(): Unit {
         BannerPrinter.printRoutes(this.handlers)
     }
 }

@@ -42,7 +42,7 @@ public class Group {
         return this
     }
     
-    public func handle(meth:String, path:String, handler:HandlerFunc) {
+    public func handle(meth: String, path: String, handler: HandlerFunc): Unit {
         if (let Some(r) <- this.router) {
             synchronized(r.mu) {
                 checkPath(path)
@@ -78,31 +78,31 @@ public class Group {
         return wrapHandle
     }
 
-    public func get (path:String, handler:HandlerFunc) {
+    public func get(path: String, handler: HandlerFunc): Unit {
         this.handle("GET", path, handler)
     }
 
-    public func post (path:String, handler:HandlerFunc) {
+    public func post(path: String, handler: HandlerFunc): Unit {
         this.handle("POST", path, handler)
     }
-    public func put (path:String, handler:HandlerFunc) {
+    public func put(path: String, handler: HandlerFunc): Unit {
         this.handle("PUT", path, handler)
     }
-    public func delete (path:String, handler:HandlerFunc) {
+    public func delete(path: String, handler: HandlerFunc): Unit {
         this.handle("DELETE", path, handler)
     }
-    public func patch (path:String, handler:HandlerFunc) {
+    public func patch(path: String, handler: HandlerFunc): Unit {
         this.handle("PATCH", path, handler)
     }
-    public func head (path:String, handler:HandlerFunc) {
+    public func head(path: String, handler: HandlerFunc): Unit {
         this.handle("HEAD", path, handler)
     }
-    public func options (path:String, handler:HandlerFunc) {
+    public func options(path: String, handler: HandlerFunc): Unit {
         this.handle("OPTIONS", path, handler)
     }
 
     /// 匹配所有 HTTP 方法
-    public func all (path:String, handler:HandlerFunc) {
+    public func all(path: String, handler: HandlerFunc): Unit {
         this.handle("*", path, handler)
     }
 }

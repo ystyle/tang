@@ -10,7 +10,7 @@ import stdx.crypto.x509.X509Certificate
 import stdx.serialization.serialization.*
 import stdx.encoding.json.stream.{JsonSerializable, JsonDeserializable, JsonWriter, JsonReader}
 import stdx.encoding.base64.fromBase64String
-import multipart.*
+import opencj::multipart.*
 import tang.radix.RouteParams
 
 public type HandlerFunc = (TangHttpContext) -> Unit
@@ -160,8 +160,8 @@ public class TangHttpContext {
                     let splits = line.split(":")
                     if (splits.size == 2) {
                         let username = splits[0]
-                        let password = splits[1]
-                        return UserInfo(username, password)
+                        let pwd = splits[1]
+                        return UserInfo(username, pwd)
                     }
                 }
             }
@@ -312,10 +312,6 @@ public class TangHttpContext {
     public func getHeader(key:String):?String {
         return this.request.headers.getFirst(key)
     }
-}
-
-public class Param {
-    Param(let key: String, let Value: String) {}
 }
 
 public class Params {
