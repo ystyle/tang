@@ -59,5 +59,5 @@ main() {
     })
 
     // 启动应用
-    app.listen()
+    app.listen("0.0.0.0", 10000)
 }
