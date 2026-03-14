@@ -2,7 +2,7 @@
 
 > 一个基于仓颉语言的高性能 Web 框架，受 [Fiber](https://github.com/gofiber/fiber) 启发
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](../LICENSE)
+[![License](https://img.shields.io/badge/license-MulanPSLv2-blue.svg)](../LICENSE)
 [![Cangjie](https://img.shields.io/badge/Cangjie-1.0.0+-orange.svg)](https://cangjie-lang.cn)
 
 ## ✨ 特性
@@ -174,7 +174,7 @@ v1.get("/users", handler)  // 实际路径: /api/v1/users
 
 ## 📝 许可证
 
-[MIT License](../LICENSE)
+[MulanPSLv2 License](../LICENSE)
 
 ---
 
