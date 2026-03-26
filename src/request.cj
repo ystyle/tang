@@ -44,10 +44,19 @@ public class TangHttpContext {
     }
     
     /// WebSocket 升级，返回 WebSocket 实例用于双向通信
+    /// headersFunc: 自定义响应头，接收 TangHttpContext 返回 HttpHeaders
     public func upgrade(subProtocols!: ArrayList<String> = ArrayList<String>(),
                          origins!: ArrayList<String> = ArrayList<String>(),
-                         headersFunc!: (HttpRequest) -> HttpHeaders = {_: HttpRequest => HttpHeaders()}): WebSocket {
-        WebSocket.upgradeFromServer(this.context, subProtocols: subProtocols, origins: origins, userFunc: headersFunc)
+                         headersFunc!: (TangHttpContext) -> HttpHeaders = {_: TangHttpContext => HttpHeaders()}): WebSocket {
+        let ctx = this
+        WebSocket.upgradeFromServer(
+            this.context, 
+            subProtocols: subProtocols, 
+            origins: origins, 
+            userFunc: { req: HttpRequest =>
+                headersFunc(ctx)
+            }
+        )
     }
     
     public prop request: HttpRequest {
