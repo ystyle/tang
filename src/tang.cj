@@ -15,6 +15,7 @@ public class Tang {
     var port: UInt16 = 8080
     var printBanner: Bool = true
     var printRoutes: Bool = true
+    var shutdownCallback: ?() -> Unit = None
 
     /// 创建 Tang 应用实例
     public init() {
@@ -58,6 +59,12 @@ public class Tang {
         this.printRoutes = show
         this
     }
+    
+    /// 设置 shutdown 回调
+    public func setShutdownCallback(callback: () -> Unit): Tang {
+        this.shutdownCallback = Some(callback)
+        this
+    }
 
     /// 启动应用（阻塞）- 使用配置的 host 和 port
     public func listen(): Unit {
@@ -79,6 +86,12 @@ public class Tang {
             .build()
         server.logger.level = LogLevel.ERROR
         this.server = server
+        
+        // 注册 shutdown 回调
+        if (let Some(cb) <- shutdownCallback) {
+            server.onShutdown(cb)
+        }
+        
         server.serve()
     }
 
@@ -119,11 +132,26 @@ public class Tang {
         }
     }
 
-    /// 停止服务器
+/// 停止服务器
     public func stop(): Unit {
-        if (let Some(s) <- this.server) {
-            // TODO: 调用 server.stop() 方法（如果 stdx 提供）
-            this.server = None
+        match (this.server) {
+            case Some(s) =>
+                s.closeGracefully()
+                this.server = None
+            case None => ()
+        }
+    }
+    
+    /// 获取底层 stdx Server
+    public func getStdServer(): ?Server {
+        this.server
+    }
+    
+    /// 注册 shutdown 回调
+    public func onShutdown(callback: () -> Unit): Unit {
+        match (this.server) {
+            case Some(s) => s.onShutdown(callback)
+            case None => ()
         }
     }
 

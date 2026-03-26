@@ -4,9 +4,9 @@ import std.fs.Path
 import std.convert.*
 import std.collection.{ArrayList, HashMap, HashSet}
 import std.io.{ByteBuffer, InputStream}
-import stdx.net.http.{FuncHandler, HttpStatusCode, HttpContext, HttpRequest, HttpResponseBuilder, FileHandler, FileHandlerType}
+import stdx.net.http.{FuncHandler, HttpStatusCode, HttpContext, HttpRequest, HttpResponseBuilder, FileHandler, FileHandlerType, WebSocket, HttpHeaders}
 import stdx.encoding.url.{UserInfo, Form}
-import stdx.crypto.x509.X509Certificate
+import stdx.crypto.common.Certificate
 import stdx.serialization.serialization.*
 import stdx.encoding.json.stream.{JsonSerializable, JsonDeserializable, JsonWriter, JsonReader}
 import stdx.encoding.base64.fromBase64String
@@ -37,6 +37,19 @@ public class TangHttpContext {
         this.context = context
         this._params = params
     }
+    
+    /// 获取底层 HttpContext（用于 WebSocket upgrade 等高级操作）
+    public func getHttpContext(): HttpContext {
+        this.context
+    }
+    
+    /// WebSocket 升级，返回 WebSocket 实例用于双向通信
+    public func upgrade(subProtocols!: ArrayList<String> = ArrayList<String>(),
+                         origins!: ArrayList<String> = ArrayList<String>(),
+                         headersFunc!: (HttpRequest) -> HttpHeaders = {_: HttpRequest => HttpHeaders()}): WebSocket {
+        WebSocket.upgradeFromServer(this.context, subProtocols: subProtocols, origins: origins, userFunc: headersFunc)
+    }
+    
     public prop request: HttpRequest {
         get() {
             this.context.request
@@ -47,7 +60,7 @@ public class TangHttpContext {
             this.context.responseBuilder
         }
     }
-    public prop clientCertificate: Option<Array<X509Certificate>> {
+    public prop clientCertificate: Option<Array<Certificate>> {
         get() {
             this.context.clientCertificate
         }
