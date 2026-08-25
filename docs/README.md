@@ -20,6 +20,7 @@
 
 ### API 参考
 
+- **[Tang 应用](api/app.md)** - 应用生命周期、优雅停止与 shutdown 回调
 - **[Router](api/router.md)** - 路由系统 API 参考
 - **[Group](api/group.md)** - 路由分组 API 参考
 - **[TangHttpContext](api/context/)** - HTTP 上下文 API
@@ -27,6 +28,7 @@
   - [响应操作](api/context/response.md) - 状态码、Headers、JSON 响应
   - [Cookie 操作](api/context/cookie.md) - Cookie 读写
   - [辅助方法](api/context/utils.md) - 请求信息、IP、协议等
+  - [WebSocket 升级](api/context/websocket.md) - 双向通信
 
 ### 中间件
 
@@ -59,6 +61,17 @@
 ### 安装
 
 确保你已经安装了仓颉 SDK 和 stdx。
+
+**方式一：中心仓依赖（推荐）**
+
+```toml
+[dependencies]
+  tang = "1.0.3"
+```
+
+然后执行 `cjpm update` 即可。
+
+**方式二：克隆仓库**
 
 ```bash
 # 克隆仓库（国内可以使用 gitcode）

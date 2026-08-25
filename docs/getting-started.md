@@ -22,7 +22,16 @@ cd my-tang-app
 cjpm init
 ```
 
-在 `cjpm.toml` 中添加 Tang 框架的 git 依赖：
+在 `cjpm.toml` 中添加 Tang 框架依赖：
+
+**方式一：中心仓依赖（推荐）**
+
+```toml
+[dependencies]
+  tang = "1.0.3"
+```
+
+**方式二：Git 依赖**
 
 ```toml
 [dependencies]

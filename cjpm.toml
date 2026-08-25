@@ -12,18 +12,22 @@
   output-type = "static"
   src-dir = "src"
   target-dir = ""
-  version = "1.0.1"
+  version = "1.0.3"
   include = ["src"]
   exclude = ["examples/basic/results.csv"]
   license = ["MulanPSL-2.0"]
   authors = ["ystyle"]
-  repository = ["https://atomgit.com/ystyle/tang"]
+  repository = "https://atomgit.com/ystyle/tang"
 
 [target.x86_64-unknown-linux-gnu.bin-dependencies]
   path-option = ["${CANGJIE_STDX_PATH}"]
 [target.x86_64-apple-darwin.bin-dependencies]
   path-option = ["${CANGJIE_STDX_PATH}"]
 [target.x86_64-w64-mingw32.bin-dependencies]
+  path-option = ["${CANGJIE_STDX_PATH}"]
+[target.aarch64-linux-ohos.bin-dependencies]
+  path-option = ["${CANGJIE_STDX_PATH}"]
+[target.x86_64-linux-ohos.bin-dependencies]
   path-option = ["${CANGJIE_STDX_PATH}"]
 
 [profile.build]
