@@ -228,6 +228,13 @@ public class Tang {
     public func group(path: String): Group {
         this.router.group(path)
     }
+
+    /// 挂载子应用（Fiber 风格）：把子 Router 的路由以 prefix 前缀注册到当前应用
+    /// 子 Router 的中间件原样保留；路径参数照常；快照语义
+    public func mount(prefix: String, router: Router): Tang {
+        this.router.mount(prefix, router)
+        this
+    }
 }
 
 ///
