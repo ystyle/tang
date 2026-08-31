@@ -34,7 +34,7 @@ public func fromStd(handler: HttpRequestHandler): HandlerFunc {
 
 public class TangHttpContext {
     var kv: ?HashMap<String, Any> = None  // 延迟初始化，减少 GC 压力
-    let context: HttpContext
+    let _context: HttpContext
     let _params: Params
     var bodyraw: ?Array<Byte> = None
     var _multipartForm: ?MulitpartForm = None
@@ -43,13 +43,15 @@ public class TangHttpContext {
     var _csrfToken: ?String = None  // 独立的 csrfToken 字段，避免使用 HashMap
 
     init(context: HttpContext, params: Params) {
-        this.context = context
+        this._context = context
         this._params = params
     }
-    
-    /// 获取底层 HttpContext（用于 WebSocket upgrade 等高级操作）
-    public func getHttpContext(): HttpContext {
-        this.context
+
+    /// 底层 stdx HttpContext（用于 WebSocket upgrade 等高级操作）
+    public prop context: HttpContext {
+        get() {
+            this._context
+        }
     }
     
     /// WebSocket 升级，返回 WebSocket 实例用于双向通信
@@ -59,7 +61,7 @@ public class TangHttpContext {
                          headersFunc!: (TangHttpContext) -> HttpHeaders = {_: TangHttpContext => HttpHeaders()}): WebSocket {
         let ctx = this
         WebSocket.upgradeFromServer(
-            this.context, 
+            this._context, 
             subProtocols: subProtocols, 
             origins: origins, 
             userFunc: { req: HttpRequest =>
@@ -70,17 +72,17 @@ public class TangHttpContext {
     
     public prop request: HttpRequest {
         get() {
-            this.context.request
+            this._context.request
         }
     }
     public prop responseBuilder: HttpResponseBuilder {
         get() {
-            this.context.responseBuilder
+            this._context.responseBuilder
         }
     }
     public prop clientCertificate: Option<Array<Certificate>> {
         get() {
-            this.context.clientCertificate
+            this._context.clientCertificate
         }
     }
     public func kvGet<T>(key: String): ?T {

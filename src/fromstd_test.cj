@@ -109,4 +109,22 @@ class FromStdTest {
 
         stopTestServer(server, client)
     }
+
+    /// context prop 化：handler 内通过 ctx.context（public prop）直接操作底层 HttpContext
+    @TestCase
+    func testContextProp(): Unit {
+        let app = Tang()
+        app.get("/ctx-prop", { ctx =>
+            // ctx.context 是 public prop，返回底层 stdx HttpContext
+            ctx.context.responseBuilder.body("ctx-prop-ok")
+        })
+
+        let (base, server, client) = startTestServer(app)
+
+        let resp = client.get(base + "/ctx-prop")
+        @Expect(resp.status, 200u16)
+        @Expect(readRespBody(resp), "ctx-prop-ok")
+
+        stopTestServer(server, client)
+    }
 }
