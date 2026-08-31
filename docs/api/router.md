@@ -181,6 +181,45 @@ r.all("/webhook", { ctx =>
 > - **OPTIONS**：获取服务器支持的 HTTP 方法
 > - **all()**：处理所有方法（适用于 Webhook）
 
+## stdx 风格注册 register()
+
+`Router` 实现了 `HttpRequestDistributor` 接口的 `register()`，可按 stdx 语义**路径级注册**（不区分 HTTP 方法，等价于 `all()`）：
+
+```cj
+import stdx.net.http.{HttpContext}
+
+let r = Router()
+
+// 函数式：任意 HTTP 方法（GET/POST/PUT/DELETE...）都能命中
+r.register("/ping", { ctx: HttpContext =>
+    ctx.responseBuilder.body("pong")
+})
+
+// 类式：任意 HttpRequestHandler（FuncHandler / FileHandler / NotFoundHandler 等）
+r.register("/file", fromStd(FileHandler("./public", handlerType: FileHandlerType.DownLoad)))
+```
+
+- 路径支持 `:param` / `*` 语法（走同一条 radix tree）
+- 转换后自动享受所在 group 的中间件链
+- 与 stdx 默认 distributor 语义一致，可无差别替换
+
+## 子应用挂载 mount()
+
+Fiber 风格 `app.Mount`，把子 Router 的路由以 `prefix` 前缀注册到当前 Router（**注册展开**）：
+
+```cj
+let r = Router()
+let subRouter = Router()
+subRouter.get("/users/:id", { ctx => ctx.writeString("user-" + ctx.param("id")) })
+
+r.mount("/api", subRouter)   // 实际路径 /api/users/:id
+```
+
+- **中间件保留**：子 Router mount 前 wrap 的中间件原样生效
+- **路径参数照常**：走同一条 radix tree；`all()` 语义保留
+- **快照语义**：mount 后子 Router 新增路由不生效（与 Fiber `app.Mount` 一致）
+- **404 兜底**：子 Router 未命中的路径由父 Router 处理
+- 配合 `Tang.mount()` 使用（`app.mount(prefix, subApp.getRouter())`）
 
 ## 路径参数
 

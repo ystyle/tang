@@ -1,7 +1,5 @@
 package tang
 
-import stdx.net.http.{HttpContext, FuncHandler}
-
 public class Config {
     var notFoundHandler:HandlerFunc
     var methodNotAllowedHandler:HandlerFunc
@@ -51,16 +49,4 @@ public func withHandler(fn:HandlerFunc):GroupOptionFunc {
         }
         c.group.stack.add(md)
    }
-}
-
-public func withStdHandlr(fn:(HttpContext) -> Unit): HandlerFunc {
-    return {ctx => 
-        fn(ctx.context)
-    }
-}
-
-public func withStdFunHandlr(handler:FuncHandler): HandlerFunc {
-    return {ctx => 
-        handler.handle(ctx.context)
-    }
 }

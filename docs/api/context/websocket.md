@@ -6,7 +6,7 @@
 
 **核心 API**：
 - `upgrade()` - 升级为 WebSocket 连接
-- `getHttpContext()` - 获取底层 `HttpContext`（高级操作）
+- `context` - 获取底层 `HttpContext`（高级操作）
 
 ## 升级连接
 
@@ -68,11 +68,11 @@ ws.close()
 
 ## 获取底层上下文
 
-需要访问底层的 `stdx.net.http.HttpContext`（如获取 socket 信息、执行高级操作）时，使用 `getHttpContext()`：
+需要访问底层的 `stdx.net.http.HttpContext`（如获取 socket 信息、执行高级操作）时，使用 `context` 属性：
 
 ```cj
 r.get("/debug", { ctx =>
-    let raw = ctx.getHttpContext()
+    let raw = ctx.context
     // raw 是 stdx HttpContext，可访问底层能力
     ctx.json(HashMap<String, String>([
         ("method", raw.request.method)

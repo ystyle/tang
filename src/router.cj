@@ -6,7 +6,6 @@ import std.collection.ArrayList
 import stdx.net.http.{HttpContext, FuncHandler, RedirectHandler, NotFoundHandler, HttpRequestHandler, HttpRequestDistributor}
 import stdx.net.http.HttpStatusCode
 import stdx.encoding.url.URL
-import tang.log.getLogger
 import tang.radix.{RouteNode}
 
 public class Router <: HttpRequestDistributor {
@@ -33,8 +32,15 @@ public class Router <: HttpRequestDistributor {
         }
     }
 
-    public func register(path: String, _: HttpRequestHandler): Unit {
-        getLogger().info("It is not recommended to use the register method to register the handler: ${path}")
+    /// stdx 风格路径级注册（不区分 method，对应 tang 的 all() 语义）
+    /// 注册后任意 HTTP 方法都能命中该路径；路径支持 :param / * 语法
+    public func register(path: String, handler: HttpRequestHandler): Unit {
+        this._group.handle("*", path, fromStd(handler))
+    }
+
+    /// stdx 风格路径级注册（函数式重载）
+    public func register(path: String, handler: (HttpContext) -> Unit): Unit {
+        this.register(path, FuncHandler(handler))
     }
 
     public func distribute(_: String): HttpRequestHandler {
@@ -50,6 +56,31 @@ public class Router <: HttpRequestDistributor {
 
     public func group(path:String): Group {
         this._group.group(path)
+    }
+
+    /// Fiber 风格子应用挂载：把子 Router 的路由以 prefix 前缀注册到当前 Router（注册展开）
+    ///
+    /// - 子 Router 的中间件已 wrap 进 HandlerFunc，重注册时原样保留
+    /// - 路径参数 / 通配符照常（走同一条 radix tree）
+    /// - 快照语义：mount 后子 Router 新增路由不生效（Fiber app.Mount 同款）
+    /// - 子 Router 的 404 由父 Router 兜底
+    ///
+    /// 示例：
+    /// ```cj
+    /// let subApp = Tang()
+    /// subApp.get("/users/:id", { ctx => ctx.json(...) })
+    /// app.mount("/api", subApp.getRouter())   // 实际路径 /api/users/:id
+    /// ```
+    public func mount(prefix: String, router: Router): Unit {
+        for ((key, handler) in router.handlers) {
+            // key 格式 "METHOD:pattern"（* 表示 all() 注册）
+            let idxOpt = key.indexOf(":")
+            if (let Some(idx) <- idxOpt) {
+                let method = key[..idx]
+                let pattern = key[idx + 1..]
+                this._group.handle(method, prefix + pattern, handler)
+            }
+        }
     }
 
     func lookup(ctx: HttpContext): (HandlerFunc, Params) {
