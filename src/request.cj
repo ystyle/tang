@@ -4,7 +4,7 @@ import std.fs.Path
 import std.convert.*
 import std.collection.{ArrayList, HashMap, HashSet}
 import std.io.{ByteBuffer, InputStream}
-import stdx.net.http.{FuncHandler, HttpStatusCode, HttpContext, HttpRequest, HttpResponseBuilder, FileHandler, FileHandlerType, WebSocket, HttpHeaders, HttpRequestHandler}
+import stdx.net.http.{HttpStatusCode, HttpContext, HttpRequest, HttpResponseBuilder, FileHandler, FileHandlerType, WebSocket, HttpHeaders, HttpRequestHandler}
 import stdx.encoding.url.{UserInfo, Form}
 import stdx.crypto.common.Certificate
 import stdx.serialization.serialization.*
@@ -16,12 +16,6 @@ import tang.radix.RouteParams
 public type HandlerFunc = (TangHttpContext) -> Unit
 
 public type MiddlewareFunc = (HandlerFunc) -> HandlerFunc
-
-public func httpHandlerFunc(handle: FuncHandler): HandlerFunc {
-    return {
-        ctx => handle.handle(ctx.context)
-    }
-}
 
 /// 把 stdx 函数式 handler（方法形态）转成 tang handler
 /// 转成 HandlerFunc 后走 Group.wrap，自动享受所在 group 的中间件链
