@@ -16,6 +16,7 @@ public class Tang {
     var printBanner: Bool = true
     var printRoutes: Bool = true
     var shutdownCallback: ?() -> Unit = None
+    var logLevel: LogLevel = LogLevel.ERROR  // 默认压掉 stdx 连接噪音日志（Socket is closed 等）
 
     /// 创建 Tang 应用实例
     public init() {
@@ -66,8 +67,25 @@ public class Tang {
         this
     }
 
+    /// 设置 stdx Server 日志级别（默认 ERROR，压连接噪音日志）
+    public func setLogLevel(level: LogLevel): Tang {
+        this.logLevel = level
+        this
+    }
+
     /// 启动应用（阻塞）- 使用配置的 host 和 port
     public func listen(): Unit {
+        listen({ _: ServerBuilder => () })
+    }
+
+    /// 启动应用（阻塞）- 使用配置的 host 和 port，支持 builder 定制 stdx ServerBuilder
+    /// builder 在 build 前调用，可配置 TLS、超时、协程池、HTTP/2 参数等
+    ///
+    /// 示例：
+    /// ```cj
+    /// app.listen({ sb => sb.tlsConfig(tlsCfg).readTimeout(5 * Duration.second) })
+    /// ```
+    public func listen(builder: (ServerBuilder) -> Unit): Unit {
         // 打印 Banner
         if (this.printBanner) {
             this.router.printBanner(version: TANG_VERSION, port: this.port)
@@ -79,12 +97,13 @@ public class Tang {
         }
 
         // 构建并启动服务器
-        let server = ServerBuilder()
+        let sb = ServerBuilder()
             .distributor(this.router)
             .addr(this.host)
             .port(this.port)
-            .build()
-        server.logger.level = LogLevel.ERROR
+        builder(sb)
+        let server = sb.build()
+        server.logger.level = this.logLevel
         this.server = server
         
         // 注册 shutdown 回调
