@@ -6,7 +6,6 @@ import std.collection.ArrayList
 import stdx.net.http.{HttpContext, FuncHandler, RedirectHandler, NotFoundHandler, HttpRequestHandler, HttpRequestDistributor}
 import stdx.net.http.HttpStatusCode
 import stdx.encoding.url.URL
-import tang.log.getLogger
 import tang.radix.{RouteNode}
 
 public class Router <: HttpRequestDistributor {
@@ -33,8 +32,15 @@ public class Router <: HttpRequestDistributor {
         }
     }
 
-    public func register(path: String, _: HttpRequestHandler): Unit {
-        getLogger().info("It is not recommended to use the register method to register the handler: ${path}")
+    /// stdx 风格路径级注册（不区分 method，对应 tang 的 all() 语义）
+    /// 注册后任意 HTTP 方法都能命中该路径；路径支持 :param / * 语法
+    public func register(path: String, handler: HttpRequestHandler): Unit {
+        this._group.handle("*", path, fromStd(handler))
+    }
+
+    /// stdx 风格路径级注册（函数式重载）
+    public func register(path: String, handler: (HttpContext) -> Unit): Unit {
+        this.register(path, FuncHandler(handler))
     }
 
     public func distribute(_: String): HttpRequestHandler {
