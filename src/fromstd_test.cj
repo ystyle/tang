@@ -1,7 +1,7 @@
 package tang
 
 import std.sync.Mutex
-import stdx.net.http.{ServerBuilder, ClientBuilder, Client, Server, HttpResponse, HttpContext, NotFoundHandler}
+import stdx.net.http.{ServerBuilder, ClientBuilder, Client, Server, HttpResponse, HttpContext, HttpRequestDistributor, NotFoundHandler}
 
 /// 测试端口占位（afterBind 回填实际端口）
 class TestPortHolder {
@@ -22,12 +22,17 @@ func readRespBody(resp: HttpResponse): String {
 /// 起一个真实 stdx Server（端口 0 随机绑定），tang Router 作为 distributor
 /// 返回 (baseUrl, server, client)，用完需调 stopTestServer
 func startTestServer(app: Tang): (String, Server, Client) {
+    startTestServer(app.getRouter())
+}
+
+/// 起一个真实 stdx Server（端口 0 随机绑定），自定义 distributor（如 ComposeDistributor）
+func startTestServer(distributor: HttpRequestDistributor): (String, Server, Client) {
     let portLock = Mutex()
     let portCond = synchronized(portLock) { portLock.condition() }
     let holder = TestPortHolder()
 
     let server = ServerBuilder()
-        .distributor(app.getRouter())
+        .distributor(distributor)
         .addr("127.0.0.1")
         .port(0)
         .build()
