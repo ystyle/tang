@@ -23,6 +23,7 @@
 - **[Tang 应用](api/app.md)** - 应用生命周期、优雅停止与 shutdown 回调
 - **[Router](api/router.md)** - 路由系统 API 参考
 - **[Group](api/group.md)** - 路由分组 API 参考
+- **[与 stdx.http 互操作](api/stdx-interop.md)** - fromStd / register / ComposeDistributor / mount
 - **[TangHttpContext](api/context/)** - HTTP 上下文 API
   - [请求处理](api/context/request.md) - Query、Param、Body 解析
   - [响应操作](api/context/response.md) - 状态码、Headers、JSON 响应

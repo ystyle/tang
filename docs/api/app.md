@@ -9,7 +9,9 @@
 - `onShutdown()` - 注册关闭回调
 - `stop()` - 优雅停止服务器
 - `getStdServer()` - 获取底层 `stdx.net.http.Server`
-- `getHttpContext()` - 上下文级：获取底层 `HttpContext`
+- `listen(builder)` - 透传 stdx `ServerBuilder` 配置（TLS、超时等）
+- `setLogLevel()` - 设置 stdx Server 日志级别（默认 ERROR）
+- `mount(prefix, router)` - Fiber 风格子应用挂载
 
 ## 优雅停止
 
@@ -78,6 +80,51 @@ if (let Some(server) <- app.getStdServer()) {
 
 > **提示**：`getStdServer()` 返回 `?Server`（Option 类型），服务器未启动时返回 `None`。
 
+## ServerBuilder 配置透传
+
+从 `1.0.4` 开始，`listen(builder)` 支持在构建 stdx `Server` 前定制 `ServerBuilder`，解锁 TLS、超时、协程池、HTTP/2 参数等能力：
+
+```cj
+let app = Tang()
+
+app.listen({ sb =>
+    sb.tlsConfig(tlsCfg)                    // HTTPS
+    sb.readTimeout(5 * Duration.second)     // 超时
+    sb.servicePoolConfig(poolCfg)           // 协程池
+})
+```
+
+- `builder` 在 `build()` 之前调用，可链式配置任意 `ServerBuilder` 方法
+- 现有 `listen()` / `listen(port)` / `listen(host, port)` 复用同一逻辑
+- 对应的 `listenAsync(builder)` 可异步启动
+
+### 日志级别
+
+stdx Server 默认日志级别为 ERROR（压掉连接噪音日志如 `Socket is closed` / `Broken pipe`）。需要日志时用 `setLogLevel()` 打开：
+
+```cj
+let app = Tang().setLogLevel(LogLevel.INFO)
+app.listen()
+```
+
+`setLogLevel()` 返回 `Tang`，可链式调用。
+
+## 子应用挂载
+
+Fiber 风格的 `app.Mount`，把子应用（Router）的路由以前缀注册到当前应用：
+
+```cj
+let app = Tang()
+let subApp = Tang()
+subApp.get("/users/:id", { ctx => ctx.json(...) })
+
+app.mount("/api", subApp.getRouter())   // 实际路径 /api/users/:id
+app.listen()
+```
+
+- 子应用中间件原样保留；路径参数照常；快照语义
+- 完整说明见 [与 stdx.http 互操作](stdx-interop.md)
+
 ## 完整示例
 
 ```cj
@@ -101,6 +148,7 @@ app.stop()
 
 ## 相关链接
 
+- **[与 stdx.http 互操作](stdx-interop.md)** - fromStd / register / ComposeDistributor / mount
 - **[WebSocket 升级](context/websocket.md)** - WebSocket 双向通信
 - **[快速入门](../getting-started.md)** - 完整应用示例
 - **[框架概述](../overview.md)** - Tang 的设计理念
