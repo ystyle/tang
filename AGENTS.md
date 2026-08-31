@@ -1,6 +1,13 @@
 # Tang
 一个仓颉的轻量级的web框架， 初始版本移植自[uptrace/bunrouter]， 后来context按fiber ctx的api 风格做了修改
 
+# 远程仓库
+
+- **atomgit/gitcode 上的 `ystyle/tang` 是 github 的镜像仓库**：平台对镜像仓库禁止直接 push
+  （403 "image repository"），且不会自动同步 github 的推送。
+- 推送需走 github 主仓库：`git push github master`（或 `git push github <branch>`）。
+- 镜像侧如需更新，须在 atomgit/gitcode 网页端关闭镜像模式或手动触发同步。
+
 # 项目操作
 
 ```shell

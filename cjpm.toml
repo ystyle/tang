@@ -12,7 +12,7 @@
   output-type = "static"
   src-dir = "src"
   target-dir = ""
-  version = "1.0.3"
+  version = "1.0.4"
   include = ["src"]
   exclude = ["examples/basic/results.csv"]
   license = ["MulanPSL-2.0"]
