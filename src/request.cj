@@ -136,8 +136,28 @@ public class TangHttpContext {
         if (let Some(v) <- this.bodyraw) {
             return v 
         }
-        var bs = Array<UInt8>(this.request.bodySize ?? 0, repeat: 0)
-        this.request.body.read(bs)
+        let total = this.request.bodySize ?? 0
+        var bs = Array<UInt8>(total, repeat: 0)
+        // 必须**循环**读到 total 字节：网络流的 read() 允许短读（返回实际读到的字节数），
+        // 只调一次会让剩余部分保持 0 填充 → 请求体被静默损坏。
+        // 实测症状：cjreg 的 `POST /pkg` 发布，3KB 的包侥幸通过、21KB 的包尾部全变 0
+        // → 服务端算出的 tarball sha256 与客户端声明不符，发布永远 400。
+        // 注：bodySize 为 None（chunked 无长度）时 total=0，此处读不到内容——属既有行为。
+        var off: Int64 = 0
+        let chunk: Int64 = 8192
+        let buf = Array<UInt8>(chunk, repeat: 0)
+        while (off < total) {
+            let n = this.request.body.read(buf)
+            if (n <= 0) {
+                break   // 对端提前结束：只能拿到已读部分（保持既有尽力而为语义）
+            }
+            let rest = total - off
+            let take = if (n < rest) { n } else { rest }
+            for (i in 0..take) {
+                bs[off + i] = buf[i]
+            }
+            off += take
+        }
         this.bodyraw = bs
         return bs
     }
