@@ -19,6 +19,12 @@
   authors = ["ystyle"]
   repository = "https://atomgit.com/ystyle/tang"
 
+[target.x86_64-unknown-linux-gnu]
+  # stdx.net.http 的静态库引用 SHA1（WS accept-key）→ 单测链接需要 digest，
+  # 否则报 undefined reference to `DYN_SHA1` / MallocDynMsg / FreeDynMsg。
+  # 只放 target 级：package 级会传染宏包链接（见 cjxt/AGENTS.md 同款记录）。
+  link-option = "-L${CANGJIE_STDX_PATH} -lstdx.crypto.digest"
+
 [target.x86_64-unknown-linux-gnu.bin-dependencies]
   path-option = ["${CANGJIE_STDX_PATH}"]
 [target.x86_64-apple-darwin.bin-dependencies]
