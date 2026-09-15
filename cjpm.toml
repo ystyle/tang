@@ -12,9 +12,13 @@
   output-type = "static"
   src-dir = "src"
   target-dir = ""
-  version = "1.0.4"
-  include = ["src"]
-  exclude = ["examples/basic/results.csv"]
+  version = "1.0.5"
+  # 制品清单（include/exclude 用 gitignore 风格的模式）：
+  #   带：src/**（含 *_test.cj）+ README/LICENSE/cjpm.toml
+  #   不带：docs/（设计文档）、examples/（独立示例工程）、scripts/、target/
+  # 只有 exclude 能挡住目录：include 不写会整棵工作树打包，写了也不等于白名单。
+  include = ["src", "LICENSE"]
+  exclude = ["/docs", "/examples", "/scripts", "/target", "AGENTS.md"]
   license = ["MulanPSL-2.0"]
   authors = ["ystyle"]
   repository = "https://atomgit.com/ystyle/tang"
