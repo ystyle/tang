@@ -1,7 +1,7 @@
 [dependencies]
   "sonyflake" = "1.0.9"
   "opencj::multipart" = "0.1.3"
-  "cjpminfo" = "1.2.0"
+  "cjpminfo" = "1.2.1"
 
 [package]
   cjc-version = "1.1.0"
@@ -12,7 +12,7 @@
   output-type = "static"
   src-dir = "src"
   target-dir = ""
-  version = "1.0.5"
+  version = "1.0.6"
   # 制品清单（include/exclude 用 gitignore 风格的模式）：
   #   带：src/**（含 *_test.cj）+ README/LICENSE/cjpm.toml
   #   不带：docs/（设计文档）、examples/（独立示例工程）、scripts/、target/
