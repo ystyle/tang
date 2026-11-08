@@ -1,6 +1,6 @@
 [workspace]
-  members = ["tang", "tang_ext_json_seajson", "tang_ext_crypto", "tang_ext_stdx"]
-  build-members = ["tang", "tang_ext_json_seajson", "tang_ext_crypto", "tang_ext_stdx"]
+  members = ["tang", "tang_ext_json_seajson", "tang_ext_crypto", "tang_ext_stdx", "examples/all_method", "examples/app_demo", "examples/banner_test", "examples/basic", "examples/basicauth", "examples/bind_query", "examples/http_demo", "examples/json", "examples/middleware_showcase", "examples/path_params", "examples/todo", "examples/websocket"]
+  build-members = ["tang", "tang_ext_json_seajson", "tang_ext_crypto", "tang_ext_stdx", "examples/all_method", "examples/app_demo", "examples/banner_test", "examples/basic", "examples/basicauth", "examples/bind_query", "examples/http_demo", "examples/json", "examples/middleware_showcase", "examples/path_params", "examples/todo", "examples/websocket"]
   test-members = ["tang", "tang_ext_stdx"]
 
 # stdx 只在扩展成员里用（crypto / stdx 兼容层）。核心与 JSON 成员零 stdx，

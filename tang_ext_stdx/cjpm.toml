@@ -1,11 +1,11 @@
 [dependencies]
-  "tang" = "2.0.0"
+  "tang" = "2.1.0"
   "ystyle::tachyon" = "0.1.0"
 
 [package]
   cjc-version = "1.2.0"
   name = "tang_ext_stdx"
-  version = "2.0.0"
+  version = "2.1.0"
   description = "tang 的 stdx 兼容层：把 tang 应用跑在 stdx server 上，复用 stdx 风格的 handler"
   output-type = "static"
   src-dir = "src"

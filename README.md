@@ -159,7 +159,7 @@ app.mount("/sub", subApp.getRouter())    // 子应用挂载
 
 ## 📁 示例
 
-`examples/` 下有 11 个可运行示例（basic / json / bind_query / todo / middleware_showcase / ...），
+`examples/` 下有 12 个可运行示例（都是 workspace 成员，依赖写版本号；仓内用 `cjpm build -m examples/<名字>`）（basic / json / bind_query / todo / middleware_showcase / ...），
 全部已对齐 v2.0.0 的 API，各自 `cjpm run` 即可：
 
 | 示例 | 展示什么 | 额外依赖 |

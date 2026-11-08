@@ -19,6 +19,12 @@
 | `tang_ext_crypto/` | + stdx.crypto | csrf / session / encryptcookie / etag / idempotency |
 | `tang_ext_stdx/` | + stdx.net.http | stdx 兼容层（`serve` + `fromStd`） |
 
+**仓内依赖一律写版本号**（workspace 成员之间不用 path）：
+- 成员：`"tang" = "2.1.0"`、`"ystyle::tachyon" = "0.1.0"`
+- 示例也是成员（在根 `members` 与 `build-members` 里），同样写版本号
+- 仓内构建用 `cjpm build -m examples/<名字>`，或根目录 `cjpm build`（全量，CI 闸门）；
+  单独 `cd examples/x && cjpm run` 会按版本号从中心仓解析，需该版本已发布
+
 **硬约束**：`tang/` 下不得出现 `import stdx` 或 stdx 依赖配置。
 判据：`grep -rn 'stdx' tang/src/ tang/cjpm.toml` 只应命中注释。
 

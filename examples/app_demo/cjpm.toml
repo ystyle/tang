@@ -1,5 +1,5 @@
 [dependencies]
-  "tang" = { path = "../../tang" }
+  "tang" = "2.1.0"
 
 [package]
   cjc-version = "1.2.0"

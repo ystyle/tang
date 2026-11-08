@@ -1,6 +1,6 @@
 [dependencies]
-  "tang" = { path = "../../tang" }
-  "tang_ext_json_seajson" = { path = "../../tang_ext_json_seajson" }
+  "tang" = "2.1.0"
+  "tang_ext_json_seajson" = "2.1.0"
   "seajson" = "1.5.1"
 
 [package]

@@ -1,10 +1,10 @@
 [dependencies]
-  "tang" = "2.0.0"
+  "tang" = "2.1.0"
 
 [package]
   cjc-version = "1.2.0"
   name = "tang_ext_crypto"
-  version = "2.0.0"
+  version = "2.1.0"
   description = "tang 的加密相关中间件：csrf / session / encryptcookie / etag / idempotency（依赖 stdx.crypto）"
   output-type = "static"
   src-dir = "src"
