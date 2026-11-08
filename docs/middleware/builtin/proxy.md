@@ -1,5 +1,8 @@
 # Proxy - 反向代理
 
+> **本分支暂不可用**：Proxy 需要 HTTP 客户端能力，而 tachyon 只提供服务端。
+> 该中间件在 `_disabled/` 里，计划拆成 `tang_ext_proxy`（可引入 stdx.net.http 客户端）。
+
 ## 概述
 
 - **功能**：将请求反向代理到后端服务器

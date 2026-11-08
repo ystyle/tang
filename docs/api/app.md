@@ -1,5 +1,7 @@
 # Tang 应用生命周期
 
+> **本分支说明**：本页的 server 相关 API 仍按 1.0.x（stdx.net.http）描述；本分支底层换成 tachyon，getStdServer() 返回 tachyon Server。
+
 ## 概述
 
 从 `1.0.3` 开始，`Tang` 应用类提供完整的生命周期管理能力：优雅停止、shutdown 回调以及底层服务器访问。

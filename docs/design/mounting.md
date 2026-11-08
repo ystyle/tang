@@ -1,5 +1,7 @@
 # tang × stdx.http 互相挂载方案（讨论稿）
 
+> **本分支说明**：本文是 1.0.x 时期的设计记录；本分支 mount() 行为保留，但 fromStd/register/ComposeDistributor 已变。
+
 > 状态：**已定稿并实施（feat/mounting 分支）** · 作者：ystyle · 2026-03
 >
 > 本文档梳理 tang 与 stdx.http 之间的挂载关系，按议题逐个讨论，每个议题给出

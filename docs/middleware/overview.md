@@ -220,50 +220,43 @@ func userMiddleware(): MiddlewareFunc {
 
 ## 内置中间件分类
 
-Tang 提供了 23+ 内置中间件，按功能分类：
+中间件按**是否依赖 stdx** 分两类：核心成员里的 16 个零依赖，加密相关的 5 个在 `tang_ext_crypto`。
 
-### 监控与检查
-- **HealthCheck** - 健康检查（Liveness/Readiness）
+### 核心（`tang`，零 stdx）
 
-### 路由与请求控制
-- **Redirect** - URL 重定向（301/302）
-- **Rewrite** - URL 重写（服务器端）
-- **Favicon** - Favicon 处理
-- **Timeout** - 请求超时控制
-- **Proxy** - 反向代理
+import 前缀：`tang.middleware.<名字>`
 
-### 安全类
-- **Security** - 安全响应头（XSS、Clickjacking 等）
-- **CORS** - 跨域资源共享
-- **BasicAuth** - HTTP 基本认证
-- **CSRF** - CSRF 保护
-- **KeyAuth** - API 密钥认证
+| 分类 | 中间件 |
+|---|---|
+| 监控与检查 | HealthCheck |
+| 路由与请求控制 | Redirect、Rewrite、Favicon、Timeout |
+| 安全类 | Security、CORS、BasicAuth、KeyAuth |
+| 日志与监控 | Log、AccessLog、RequestID |
+| 异常处理 | Exception（取代旧 Recovery，动机会在文档里说明） |
+| 流量控制 | RateLimit、BodyLimit |
+| 静态文件 | StaticFile（基于 tachyon `FileServer` / `std.fs`） |
+| 缓存与优化 | Cache |
 
-### 日志与监控
-- **Log** - 请求日志（简化版）
-- **AccessLog** - 访问日志（详细版）
-- **RequestID** - 请求 ID 生成
+### 加密类（`tang_ext_crypto`，依赖 stdx.crypto）
 
-### 异常处理
-- **Recovery** - 异常恢复和错误处理
+import 前缀：`tang_ext_crypto.<名字>`
 
-### 流量控制
-- **RateLimit** - 请求速率限制
-- **BodyLimit** - 请求体大小限制
+| 中间件 | 说明 |
+|---|---|
+| CSRF | CSRF 保护（token 生成/校验） |
+| Session | 会话管理（签名 Cookie） |
+| EncryptCookie | Cookie 加密 |
+| ETag | 基于摘要的 ETag 校验 |
+| Idempotency | 幂等键控制（防重复提交） |
 
-### 静态文件
-- **StaticFile** - 静态文件服务
+> 迁移提示：这 5 个的 import 从 `tang.middleware.xxx` 改成了 `tang_ext_crypto.xxx`，
+> 并需要在 `cjpm.toml` 里加上 `tang_ext_crypto` 依赖（以及 `CANGJIE_STDX_PATH` 环境）。
 
-### 会话与 Cookie
-- **Session** - 会话管理
-- **EncryptCookie** - Cookie 加密
+### 暂不可用
 
-### 缓存与优化
-- **Cache** - Cache-Control 头
-- **ETag** - ETag 缓存验证
-
-### 高级功能
-- **Idempotency** - 幂等性控制（防止重复提交）
+| 中间件 | 原因 | 后续 |
+|---|---|---|
+| Proxy | 需要 HTTP 客户端，tachyon 只有服务端 | 待 `tang_ext_proxy`（可引 stdx client） |
 
 ## 中间件最佳实践
 

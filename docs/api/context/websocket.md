@@ -1,5 +1,7 @@
 # WebSocket 升级
 
+> **本分支说明**：本分支暂未提供 WebSocket 升级（tachyon 侧 hijack 能力待接），见 _disabled/README.md。
+
 ## 概述
 
 从 `1.0.3` 开始，Tang 支持通过 `TangHttpContext.upgrade()` 将 HTTP 请求升级为 WebSocket 连接，实现服务端主动推送、实时聊天等双向通信场景。

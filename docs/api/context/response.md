@@ -1,4 +1,11 @@
 
+
+> **本分支说明**：HttpStatusCode.* 现在是 UInt16 常量（原来来自 stdx），可直接传给 status(...)。
+
+> **本分支变更**：`ctx.json(v)` 的编码实现不再内置，需要先注册 JSON codec
+> （如 `useSeaJson()`，见 `tang_ext_json_seajson`）。核心保持零 stdx。
+> 未注册时调用会抛异常并提示。
+
 # 响应操作
 
 ## 概述

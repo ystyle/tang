@@ -1,4 +1,7 @@
 
+
+> **本分支说明**：Cookie 类型已换成 tang.Cookie（与 stdx 同形），setCookie/setSimpleCookie 用法不变。
+
 # Cookie 操作
 
 ## 概述

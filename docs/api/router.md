@@ -1,4 +1,7 @@
 
+
+> **本分支说明**：本页的 register() / fromStd / ComposeDistributor 相关内容属于 1.0.x；本分支已移除或移到 tang_ext_stdx。
+
 # Router
 
 ## 概述
@@ -613,5 +616,5 @@ r.get("/users", { ctx =>
 ## 相关链接
 
 - **[Group API](group.md)** - 路由组详细文档
-- **[Radix Tree 原理](../advanced/radix-tree-routing.md)** - 深入理解路由实现
+- **Radix Tree 原理** - 源码见 `tang/src/radix/`（node.cj / router_tree.cj）
 - **[源码](../../src/router.cj)** - Router 类源代码
