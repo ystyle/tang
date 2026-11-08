@@ -1,135 +1,140 @@
 package todo
 
 import std.convert.*
-import std.collection.{ArrayList, HashMap}
-import stdx.encoding.json.stream.*
+import std.collection.ArrayList
 import tang.*
+import tang_ext_json_seajson.bindJson
+import seajson.*
 
-// 存储todo
+// 内存存储
 let todoList = ArrayList<Todo>([Todo(1, "cangjie"), Todo(2, "tang")])
 
-class Result<T> <: JsonSerializable where T <: JsonSerializable {
-    let code:Int64
-    let msg:?String
-    let data:?T
-    init(code:Int64, data:T){
-        this.code = code 
-        this.data = data
-        this.msg = None
-    }
-    init(code:Int64, msg:String){
-        this.code = code 
-        this.data = None
-        this.msg = msg
-    }
-    init(code:Int64, msg:?String, data:?T){
-        this.code = code 
-        this.data = data
-        this.msg = msg
-    }
-    public func toJson(w: JsonWriter): Unit {
-        w.startObject()
-        w.writeName("code").writeValue(this.code)
-        w.writeName("msg").writeValue(this.msg)
-        w.writeName("data").writeValue(this.data)
-        w.endObject()
-    }
-}
+/// 待办项：实现 seajson 的编码与解码契约
+public class Todo <: JsonWriterEncodable & JsonDecodable<Todo> {
+    public var id: Int64 = 0
+    public var content: String = ""
 
-// todo 结构
-class Todo <: JsonDeserializable<Todo> & JsonSerializable {
-    var id: Int64
-    var content: String
-    init(id: Int64, content: String) {
+    public init(id: Int64, content: String) {
         this.id = id
         this.content = content
     }
-    public func toJson(w: JsonWriter): Unit {
-        w.startObject()
-        w.writeName("id").writeValue(this.id)
-        w.writeName("content").writeValue(this.content)
-        w.endObject()
+
+    public static func fromJsonString(json: String): Todo {
+        let v = parseJson(json)
+        return Todo(jsonFieldInt(v, "id") ?? 0, jsonFieldString(v, "content") ?? "")
     }
 
-    public static func fromJson(r: JsonReader): Todo {
-        let res = Todo(0, "")
-        fromJsonObject(
-            r,
-            [
-                ("id", {=> res.id = r.readValue<Int64>()}),
-                ("content", {=> res.content = r.readValue<String>()})
-            ])
-        return res
+    public func writeJson(w: JsonWriter): Unit {
+        w.beginObject()
+        w.name("id")
+        w.value(id)
+        w.name("content")
+        w.value(content)
+        w.endObject()
     }
 }
 
-func fromJsonObject(r: JsonReader, list: Array<(String, () -> Unit)>) {
-    let refs = HashMap<String, () -> Unit>(list)
-    while (let Some(v) <- r.peek()) {
-        match (v) {
-            case BeginObject =>
-                r.startObject()
-                while (r.peek() != EndObject) {
-                    let n = r.readName()
-                    if (refs.contains(n)) {
-                        refs[n]()
-                    } else {
-                        r.skip()
-                    }
-                }
-                r.endObject()
-                break
-            case _ => throw Exception()
+/// 待办列表的 JSON 形态（数组）
+public class TodoArray <: JsonWriterEncodable {
+    let items: ArrayList<Todo>
+
+    public init(items: ArrayList<Todo>) {
+        this.items = items
+    }
+
+    public func writeJson(w: JsonWriter): Unit {
+        w.beginArray()
+        for (t in items) {
+            w.writerEncodableValue(t)
         }
+        w.endArray()
+    }
+}
+
+/// 统一响应外壳
+///
+/// 泛型参数限定为可 JSON 编码的类型，编码时直接写进去（不物化中间字符串）。
+public class Result<T> <: JsonWriterEncodable where T <: JsonWriterEncodable {
+    let code: Int64
+    let msg: ?String
+    let data: ?T
+
+    public init(code: Int64, data: T) {
+        this.code = code
+        this.data = Some(data)
+        this.msg = None
+    }
+
+    public init(code: Int64, msg: String) {
+        this.code = code
+        this.data = None
+        this.msg = Some(msg)
+    }
+
+    public func writeJson(w: JsonWriter): Unit {
+        w.beginObject()
+        w.name("code")
+        w.value(code)
+        w.name("msg")
+        match (msg) {
+            case Some(m) => w.value(m)
+            case None => w.nullValue()
+        }
+        w.name("data")
+        match (data) {
+            case Some(d) => w.writerEncodableValue(d)
+            case None => w.nullValue()
+        }
+        w.endObject()
     }
 }
 
 func getOneTodo(ctx: TangHttpContext) {
-    let id = ctx.param("id")
+    let id = Int64.parse(ctx.param("id"))
     for (todo in todoList) {
-        if (Int64.parse(id) == todo.id) {
-            ctx.json(Result(1, todo))
+        if (todo.id == id) {
+            ctx.json(Result<Todo>(1, todo))
             return
         }
     }
-    ctx.json(Result<Todo>(-1,"请求数据不存在"))
+    ctx.json(Result<Todo>(-1, "请求数据不存在"))
 }
 
 func createTodo(ctx: TangHttpContext) {
-    let m = ctx.bindJson<HashMap<String, String>>()
-    if (let Some(t) <- m) {
-        let content = t["content"]
-        let todo = Todo(todoList.size + 1, content)
-        todoList.add(todo)
-        ctx.json(Result(1, todo))
-    } else {
-        ctx.json(Result<Todo>(-1,"请求参数错误"))
+    match (bindJson<Todo>(ctx)) {
+        case Some(t) =>
+            let todo = Todo(todoList.size + 1, t.content)
+            todoList.add(todo)
+            ctx.json(Result<Todo>(1, todo))
+        case None => ctx.json(Result<Todo>(-1, "请求参数错误"))
     }
 }
 
 func updateTodo(ctx: TangHttpContext) {
-    let m = ctx.bindJson<Todo>()
-    if (let Some(temp) <- m) {
-        for (todo in todoList) {
-            if (temp.id == todo.id) {
-                todo.content = temp.content
-                ctx.json(Result(1, todo))
-                break
+    match (bindJson<Todo>(ctx)) {
+        case Some(temp) =>
+            var found = false
+            for (todo in todoList) {
+                if (temp.id == todo.id) {
+                    todo.content = temp.content
+                    ctx.json(Result<Todo>(1, todo))
+                    found = true
+                    break
+                }
             }
-        }
-    } else {
-        ctx.json(Result<Todo>(-1,"请求参数错误"))
+            if (!found) {
+                ctx.json(Result<Todo>(-1, "请求数据不存在"))
+            }
+        case None => ctx.json(Result<Todo>(-1, "请求参数错误"))
     }
 }
 
 func deleteTodo(ctx: TangHttpContext) {
     let id = Int64.parse(ctx.param("id"))
-    todoList.removeIf({
-        todo => return todo.id == id
-    })
-    ctx.json(Result<Todo>(1,"ok"))
+    todoList.removeIf({todo => todo.id == id})
+    ctx.json(Result<Todo>(1, "ok"))
 }
 
 func listTodo(ctx: TangHttpContext) {
-    ctx.json(Result<ArrayList<Todo>>(1, todoList))
+    ctx.json(Result<TodoArray>(1, TodoArray(todoList)))
 }

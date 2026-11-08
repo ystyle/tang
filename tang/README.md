@@ -157,8 +157,7 @@ app.mount("/sub", subApp.getRouter())    // 子应用挂载
 
 ## 📁 示例
 
-`examples/` 下有可运行示例（basic / json / bind_query / middleware / ...）。
-注意：部分示例仍在旧 API 上，迁移中。
+`examples/` 下有 11 个可运行示例，全部对齐 v2.0.0 的 API（详见仓库 README 的示例表）。
 
 ## 🔗 相关链接
 

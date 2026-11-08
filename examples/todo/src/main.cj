@@ -1,12 +1,15 @@
 package todo
 
 import tang.*
-import tang.middleware.accesslog.logger
-import tang.middleware.exception.exception
+import tang.middleware.accesslog.newAccessLog
+import tang.middleware.exception.newRecovery
 import tang.middleware.requestid.requestid
+import tang_ext_json_seajson.useSeaJson
 
 main() {
-    // 创建 Tang 应用
+    // JSON 走适配器：核心零 stdx，启动时注册一次 codec
+    useSeaJson()
+
     let app = Tang([
         withHost("127.0.0.1"),
         withPort(10000u16),
@@ -14,25 +17,17 @@ main() {
         withShowRoutes()
     ])
 
-    // 全局中间件
-    app.use(exception())  // 放第一位，保证其它中间件也能正常执行
-    app.use(logger())      // 访问日志记录
-    app.use(requestid())   // 请求id
+    // 中间件挂在根分组上（放在路由注册之前，对后续路由生效）
+    let root = app.group("")
+    root.use([newRecovery(), newAccessLog(), requestid()])
 
-    // 创建分组
     let group = app.group("/api")
 
-    // 获取指定id的todo
     group.get("/todo/:id", getOneTodo)
-    // 获取所有的todoList
     group.get("/todo", listTodo)
-    // 创建一个todo
     group.post("/todo", createTodo)
-    // 更新一个todo
     group.put("/todo", updateTodo)
-    // 删除一个todo
     group.delete("/todo/:id", deleteTodo)
 
-    // 启动应用
     app.listen()
 }

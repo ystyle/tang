@@ -1,13 +1,13 @@
 package basicauth
 
 import tang.*
-import tang.middleware.accesslog.logger
-import tang.middleware.exception.exception
+import tang.middleware.accesslog.newAccessLog
+import tang.middleware.exception.newRecovery
 import tang.middleware.basicauth.newBasicAuth
 
 func authUser(ctx: TangHttpContext): Bool {
     if (let Some(userinfo) <- ctx.basicAuth()) {
-        return userinfo.username() == "test" && userinfo.password() == "test"
+        return userinfo.username == "test" && userinfo.password == "test"
     }
     return false
 }
@@ -18,19 +18,14 @@ main() {
         withPort(10000u16)
     ])
 
-    // 应用中间件
-    app.use(exception())
-    app.use(newBasicAuth(authUser))
-    app.use(logger())
+    // 中间件挂在根分组上，对随后注册的路由生效
+    let root = app.group("")
+    root.use([newRecovery(), newBasicAuth(authUser), newAccessLog()])
 
-    let group = app.group("/api")
-    group.get(
+    app.group("/api").get(
         "/user/current",
-        {
-            ctx => ctx.writeString("hello world!")
-        }
+        { ctx => ctx.writeString("hello world!") }
     )
 
-    // 启动应用
     app.listen()
 }

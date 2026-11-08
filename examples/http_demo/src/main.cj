@@ -1,14 +1,18 @@
-package demo
+package http_demo
 
-import stdx.net.http.{ServerBuilder, HttpRequest}
+import tang.*
 
- main() {
-    // 1. 构建 Server 实例
-    let server = ServerBuilder().addr("127.0.0.1").port(10000).build()
-    // 2. 注册 HttpRequestHandler
-    server.distributor.register("/hello", {
-        httpContext => httpContext.responseBuilder.body("hello world!")
-    })
-    // 3. 启动服务
-    server.serve()
- }
+/// 最小 HTTP 服务
+///
+/// 对照旧版（stdx.net.http 的 ServerBuilder + distributor.register）：
+/// 现在底层是 tachyon，写法更直接，且不需要 stdx 环境。
+main() {
+    let app = Tang([
+        withHost("127.0.0.1"),
+        withPort(10000u16)
+    ])
+
+    app.get("/hello", { ctx => ctx.writeString("hello world!") })
+
+    app.listen()
+}

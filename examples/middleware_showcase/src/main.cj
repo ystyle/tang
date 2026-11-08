@@ -3,13 +3,13 @@ package middleware_showcase
 import std.collection.HashMap
 import std.collection.ArrayList
 import std.time.DateTime
-import stdx.log.LogLevel
-import stdx.encoding.hex.{fromHexString, toHexString}
+import tang.log.LogLevel
+// hex 编解码：核心零 stdx，示例内自实现（见文件末尾）
 import tang.*
 
 // 导入所有中间件
-import tang.middleware.exception.recovery
-import tang.middleware.accesslog.accesslog
+import tang.middleware.exception.newRecovery
+import tang.middleware.accesslog.newAccessLog
 import tang.middleware.requestid.requestid
 import tang.middleware.cors.{newCors, withAllowAllOrigins, withAllowCredentials}
 import tang.middleware.security.{security, withStrictSecurity}
@@ -22,13 +22,13 @@ import tang.middleware.redirect.{redirect, redirectMiddleware}
 import tang.middleware.favicon.favicon
 import tang.middleware.timeout.{timeout, withTimeout, isTimeout}
 import tang.middleware.keyauth.{keyAuth, withKey, withLookup}
-import tang.middleware.rewrite.{createRewriteFunction}
+import tang.middleware.rewrite.{rewrite, createRewriteFunction}
 import tang.middleware.cache.{cache, withDuration,withRules, withExcludePath, CacheRule}
-import tang.middleware.etag.{etag, withWeak}
-import tang.middleware.csrf.{csrf, withSecretKey, withExpiration, withExcludePath as csrfExcludePath}
-import tang.middleware.session.{session, withExpiration as sessionExpiration, withCookieName, Session}
-import tang.middleware.encryptcookie.{encryptCookie, withKeysFromHex, withExcludeCookie}
-import tang.middleware.idempotency.{idempotency, withLifetime, withKeyHeader, IdempotencyStore, CachedResponse}
+import tang_ext_crypto.etag.{etag, withWeak}
+import tang_ext_crypto.csrf.{csrf, withSecretKey, withExpiration, withExcludePath as csrfExcludePath}
+import tang_ext_crypto.session.{session, withExpiration as sessionExpiration, withCookieName, Session}
+import tang_ext_crypto.encryptcookie.{encryptCookie, withKeysFromHex, withExcludeCookie}
+import tang_ext_crypto.idempotency.{idempotency, withLifetime, withKeyHeader, IdempotencyStore, CachedResponse}
 import tang.middleware.proxy.{proxy, withBackend, withStripPrefix, LoadBalanceStrategy}
 
 main() {
@@ -53,22 +53,24 @@ main() {
     ])
 
     // 应用全局中间件
-    app.use(favicon())                           // 0. Favicon 处理（优先级高）
-    app.use(recovery())                          // 1. 异常恢复（必须放在最外层）
-    app.use(accesslog())                         // 2. 访问日志
-    app.use(requestid())
-    app.use(rateLimit([                           // 4. 限流（每分钟 100 个请求）
+    // 中间件挂在根分组上（放在路由注册前，对后续路由生效）
+    let root = app.group("")
+    root.use(favicon())                           // 0. Favicon 处理（优先级高）
+    root.use(newRecovery())                          // 1. 异常恢复（必须放在最外层）
+    root.use(newAccessLog())                         // 2. 访问日志
+    root.use(requestid())
+    root.use(rateLimit([                           // 4. 限流（每分钟 100 个请求）
         withMaxRequests(100)
     ]))
-    app.use(bodyLimit([                           // 5. 请求体限制（最大 10MB）
+    root.use(bodyLimit([                           // 5. 请求体限制（最大 10MB）
         withMaxSize(10 * 1024 * 1024)
     ]))
-    app.use(newCors([                             // 6. CORS 跨域支持
+    root.use(newCors([                             // 6. CORS 跨域支持
         withAllowAllOrigins(),            //    允许所有来源
         withAllowCredentials()            //    允许携带凭证
     ]))
-    app.use(security([withStrictSecurity()]))     // 7. 安全头（严格策略）
-    app.use(cache([                               // 8. Cache 缓存控制
+    root.use(security([withStrictSecurity()]))     // 7. 安全头（严格策略）
+    root.use(cache([                               // 8. Cache 缓存控制
         withDuration(3600),               //     默认缓存 1 小时
         withExcludePath("/test/nocache"), //     排除手动设置 header 的路径
         withRules([
@@ -76,12 +78,12 @@ main() {
             CacheRule("/static/*", 86400) // 静态文件缓存 1 天
         ])
     ]))
-    app.use(etag())                               // 9. ETag 缓存验证
-    app.use(timeout(withTimeout(2000)))
+    root.use(etag())                               // 9. ETag 缓存验证
+    root.use(timeout(withTimeout(2000)))
 
     // 添加路径重写规则（在路由匹配之前执行）
-    app.addRewriteRule(createRewriteFunction("/api/v1/(.*)", "/api/v2/$1"))
-    app.addRewriteRule(createRewriteFunction("/old/api/(.*)", "/api/$1"))
+    root.use(rewrite("/api/v1/(.*)", "/api/v2/$1"))
+    root.use(rewrite("/old/api/(.*)", "/api/$1"))
 
     // ============ 测试路由 ============
 
@@ -169,7 +171,7 @@ app.get("/test/keyauth", { ctx =>
     })
 
     // 受保护端点（需要 KeyAuth）
-    let protectedRoutes = r.group("/test/keyauth")
+    let protectedRoutes = app.group("/test/keyauth")
     protectedRoutes.use(
         keyAuth([
             withKey("test-secret-key-12345"),
@@ -219,7 +221,7 @@ app.get("/test/etag", { ctx =>
 
     // ========== CSRF 测试 ==========
     // CSRF 中间件路由组
-    let csrfRoutes = r.group("/test/csrf")
+    let csrfRoutes = app.group("/test/csrf")
     csrfRoutes.use(csrf([
         withSecretKey("012345678901234567890123456789012"),  // 32 字节 hex 密钥
         withExpiration(3600),  // 1 小时过期
@@ -274,7 +276,7 @@ app.get("/test/csrf/public", { ctx =>
     })
 
     // 测试：直接在路由上应用 CSRF 中间件
-    let testCSRF = r.group("/test/csrf2")
+    let testCSRF = app.group("/test/csrf2")
     testCSRF.use(csrf([withSecretKey("test123456789012345678901234567890")]))
     testCSRF.get("/direct", { ctx =>
         let tokenStr = match (ctx.csrfToken()) {
@@ -289,7 +291,7 @@ app.get("/test/csrf/public", { ctx =>
 
     // ========== Session 测试 ==========
     // Session 中间件路由组
-    let sessionRoutes = r.group("/test/session")
+    let sessionRoutes = app.group("/test/session")
     sessionRoutes.use(session([
         sessionExpiration(3600),  // 1 小时过期
         withCookieName("test_session")
@@ -374,7 +376,7 @@ app.get("/test/encryptcookie/get", { ctx =>
     })
 
     // ========== Idempotency 测试 ==========
-    let idempotencyRoutes = r.group("/test/idempotency")
+    let idempotencyRoutes = app.group("/test/idempotency")
     idempotencyRoutes.use(idempotency([
         withKeyHeader("X-Idempotency-Key"),
         withLifetime(3600)  // 1 小时
@@ -440,7 +442,7 @@ app.get("/test/encryptcookie/get", { ctx =>
     // ============ Proxy 中间件测试 ============
     // Proxy 演示：将 /test/proxy/* 转发到本地 API
     // 注意：需要在 proxyRoutes 下注册一个 catch-all 路由
-    let proxyRoutes = r.group("/test/proxy")
+    let proxyRoutes = app.group("/test/proxy")
 
     // 应用 Proxy 中间件（代理到本地 API）
     proxyRoutes.use(proxy([
@@ -489,7 +491,7 @@ app.get("/api/info", { ctx =>
     })
 
     // 创建 API 分组
-    let api = r.group("/api")
+    let api = app.group("/api")
 
     // Rewrite 测试路由：/api/v1/users -> /api/v2/users
     api.get("/v2/users", { ctx =>
@@ -527,13 +529,13 @@ app.get("/api/info", { ctx =>
 
     // 显示所有请求头
     api.get("/headers", { ctx =>
-        var headersInfo = ArrayList<String>()
-        for ((name, values) in ctx.request.headers) {
-            for (value in values) {
-                headersInfo.add("${name}: ${value}")
-            }
-        }
-        ctx.responseBuilder.body(String.join(headersInfo.toArray(), delimiter: "\n"))
+        // 用 StringBuilder（引用类型、let 绑定）收集：仓颉限制
+        // 「捕获可变变量的 lambda 必须直接调用」，不能往 var 数组里塞
+        let sb = StringBuilder()
+        ctx.request.headers.forEach({ name, value =>
+            sb.append(name + ": " + value + "\n")
+        })
+        ctx.responseBuilder.body(sb.toString())
     })
 
     // 测试慢响应（用于测试 accesslog 的延迟记录）
@@ -555,8 +557,8 @@ app.get("/api/info", { ctx =>
 
     // 静态文件服务（从 public 目录提供文件）
     // 使用绝对路径避免工作目录问题
-app.get("/static/*", staticFiles("/home/ystyle/Code/CangJie/online/tang/examples/middleware_showcase/public", [withPrefix("/static")]))
-app.get("/static", staticFiles("/home/ystyle/Code/CangJie/online/tang/examples/middleware_showcase/public", [withPrefix("/static")]))
+app.get("/static/*", staticFiles("public", opts: [withPrefix("/static")]))
+app.get("/static", staticFiles("public", opts: [withPrefix("/static")]))
 
     // 为所有路径添加 OPTIONS 处理器，让 CORS 中间件能够处理预检请求
     // 注意：需要为每个路径前缀注册 OPTIONS 路由，因为 radix tree 的 /* 只匹配单层路径
@@ -649,4 +651,42 @@ app.options("/*", { ctx =>
 
     // 启动应用
     app.listen()
+}
+
+
+// ── hex 编解码（示例内自实现：核心与扩展成员都不依赖 stdx.encoding.hex）──
+
+func toHexString(bytes: Array<Byte>): String {
+    let digits = "0123456789abcdef"
+    var sb = StringBuilder()
+    for (b in bytes) {
+        let v = Int64(b)
+        sb.append(String.fromUtf8([digits.toArray()[Int64((v >> 4) & 0xF)]]))
+        sb.append(String.fromUtf8([digits.toArray()[v & 0xF]]))
+    }
+    return sb.toString()
+}
+
+func fromHexString(s: String): Array<Byte> {
+    let src = s.toArray()
+    let out = Array<Byte>(src.size / 2, repeat: 0)
+    var i: Int64 = 0
+    while (i + 1 < src.size) {
+        out[i / 2] = UInt8(hexVal(src[i]) * 16 + hexVal(src[i + 1]))
+        i += 2
+    }
+    return out
+}
+
+func hexVal(c: Byte): Int64 {
+    if (c >= 48 && c <= 57) {
+        return Int64(c - 48)
+    }
+    if (c >= 97 && c <= 102) {
+        return Int64(c - 97) + 10
+    }
+    if (c >= 65 && c <= 70) {
+        return Int64(c - 65) + 10
+    }
+    return 0
 }

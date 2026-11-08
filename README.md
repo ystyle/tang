@@ -157,8 +157,17 @@ app.mount("/sub", subApp.getRouter())    // 子应用挂载
 
 ## 📁 示例
 
-`examples/` 下有可运行示例（basic / json / bind_query / middleware / ...）。
-注意：部分示例仍在旧 API 上，迁移中。
+`examples/` 下有 11 个可运行示例（basic / json / bind_query / todo / middleware_showcase / ...），
+全部已对齐 v2.0.0 的 API，各自 `cjpm run` 即可：
+
+| 示例 | 展示什么 | 额外依赖 |
+|---|---|---|
+| basic / all_method / path_params / app_demo / banner_test | 路由、分组、路径参数、配置、横幅 | 仅 `tang` |
+| http_demo | 最小 HTTP 服务 | 仅 `tang` |
+| basicauth | Basic 认证 + 日志 + 恢复 | 仅 `tang` |
+| bind_query | `QueryBindable` 查询参数绑定 | `tang_ext_json_seajson` |
+| json / todo | JSON 编解码（SeaJSON 契约）、REST API | `tang_ext_json_seajson` |
+| middleware_showcase | 20 个中间件串起来 | `tang_ext_crypto`（csrf/session/etag 等） |
 
 ## 🔗 相关链接
 

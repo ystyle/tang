@@ -1,17 +1,18 @@
 [dependencies]
-tang = { path = "../../" }
+  "tang" = { path = "../../tang" }
+  "tang_ext_crypto" = { path = "../../tang_ext_crypto" }
 
 [package]
-cjc-version = "0.59.6"
-compile-option = "-Woff unused"
-description = "Tang 中间件功能展示示例"
-link-option = ""
-name = "middleware_showcase"
-output-type = "executable"
-src-dir = "src"
-target-dir = ""
-version = "1.0.0"
-package-configuration = {}
+  cjc-version = "1.2.0"
+  name = "middleware_showcase"
+  version = "0.1.0"
+  description = "中间件功能展示"
+  output-type = "executable"
+  src-dir = "src"
+  compile-option = "-O2 -Woff unused"
+
+[target.x86_64-unknown-linux-gnu]
+  link-option = "-L${CANGJIE_STDX_PATH}"
 
 [target.x86_64-unknown-linux-gnu.bin-dependencies]
-path-option = [ "${CANGJIE_STDX_PATH}" ]
+  path-option = ["${CANGJIE_STDX_PATH}"]

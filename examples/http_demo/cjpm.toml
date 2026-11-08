@@ -1,18 +1,11 @@
-[package]
-  cjc-version = "1.0.0"
-  name = "demo"
-  description = "nothing here"
-  version = "1.0.0"
-  target-dir = ""
-  src-dir = ""
-  output-type = "executable"
-  compile-option = "--static -O2"
-  override-compile-option = ""
-  link-option = ""
-  package-configuration = {}
-
 [dependencies]
+  "tang" = { path = "../../tang" }
 
-
-[target.x86_64-unknown-linux-gnu.bin-dependencies]
-  path-option = [ "${CANGJIE_STDX_PATH}" ]
+[package]
+  cjc-version = "1.2.0"
+  name = "http_demo"
+  version = "0.1.0"
+  description = "tang 最小 HTTP 服务（等价旧 stdx 示例）"
+  output-type = "executable"
+  src-dir = "src"
+  compile-option = "-O2 -Woff unused"

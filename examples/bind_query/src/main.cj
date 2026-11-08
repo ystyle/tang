@@ -1,36 +1,53 @@
 package bind_query
 
-import std.collection.HashMap
-import stdx.serialization.serialization.*
 import tang.*
+import tang_ext_json_seajson.*
+import seajson.*
 
-class User <: Serializable<User> {
-    User(var id!: Int64 = 0, var name!: String = "") {}
+/// 查询参数绑定：实现 core 的 QueryBindable 接口
+///
+/// 旧版是 stdx.serialization 的 Serializable + ctx.bindQuery(User())；
+/// 现在核心零依赖，绑定契约定义在 core（QueryBindable），
+/// JSON 输出交给 tang_ext_json_seajson 的 codec。
+public class User <: QueryBindable & JsonWriterEncodable {
+    public var id: Int64 = 0
+    public var name: String = ""
 
-    public func serialize(): DataModel {
-        return DataModelStruct().add(field<Int64>("id", this.id)).add(field<String>("name", this.name))
-    }
-    public static func deserialize(dm: DataModel): User {
-        var dms = match (dm) {
-            case data: DataModelStruct => data
-            case _ => throw Exception("this data is not DataModelStruct")
+    public init() {}
+
+    /// 从 query string 绑定字段（类型不对的字段保持默认值）
+    public func bindQuery(params: QueryParams): Unit {
+        match (params.int("id")) {
+            case Some(v) => this.id = v
+            case None => ()
         }
-        let l_id = Int64.deserialize(dms.get("id"))
-        let l_name = String.deserialize(dms.get("name"))
-        return User(id: l_id, name: l_name)
+        match (params.value("name")) {
+            case Some(v) => this.name = v
+            case None => ()
+        }
+    }
+
+    public func writeJson(w: JsonWriter): Unit {
+        w.beginObject()
+        w.name("id")
+        w.value(id)
+        w.name("name")
+        w.value(name)
+        w.endObject()
     }
 }
 
 main() {
-    // 创建 Tang 应用
+    useSeaJson()
+
     let app = Tang([
         withHost("127.0.0.1"),
         withPort(10000u16)
     ])
 
-    // 创建分组
     let group = app.group("/api")
-    // 绑定query参数
+
+    // ?id=7&name=cangjie  →  {"id":7,"name":"cangjie"}
     group.get(
         "/user",
         {
@@ -39,14 +56,6 @@ main() {
             ctx.json(query)
         }
     )
-    group.get(
-        "/user/current",
-        {
-            ctx =>
-            let query = ctx.bindQuery(User())
-            ctx.json(query)
-        }
-    )
-    // 启动应用
+
     app.listen()
 }
