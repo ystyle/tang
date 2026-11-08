@@ -1,8 +1,7 @@
 package tang.middleware.exception
 
-import tang.{MiddlewareFunc, TangHttpContext}
+import tang.{MiddlewareFunc, TangHttpContext, HttpStatusCode}
 import tang.log.getLogger
-import stdx.net.http.HttpStatusCode
 
 /// 异常处理器类型
 public type ExceptionHandler = (TangHttpContext, Exception) -> Unit

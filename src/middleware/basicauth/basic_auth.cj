@@ -1,7 +1,6 @@
 package tang.middleware.basicauth
 
-import stdx.net.http.{HttpStatusCode}
-import tang.{MiddlewareFunc, HandlerFunc, TangHttpContext}
+import tang.{MiddlewareFunc, HandlerFunc, TangHttpContext, HttpStatusCode}
 
 public type BasicAuthCheckFunc = (TangHttpContext) -> Bool
 

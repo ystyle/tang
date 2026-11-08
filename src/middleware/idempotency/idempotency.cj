@@ -6,8 +6,7 @@ import std.sync.Mutex
 import std.time.DateTime
 import stdx.crypto.digest.SHA256
 import stdx.encoding.hex.toHexString
-import tang.{MiddlewareFunc, TangHttpContext}
-import stdx.net.http.HttpStatusCode
+import tang.{MiddlewareFunc, TangHttpContext, HttpStatusCode}
 
 /// 幂等性中间件配置选项
 public type IdempotencyOption = (IdempotencyConfig) -> Unit

@@ -29,33 +29,23 @@ public func toString(p: Protocol): String {
     }
 }
 
-/// 状态码（只枚举 tang 用到的常量）
-public enum HttpStatusCode {
-    | STATUS_OK
-    | STATUS_MOVED_PERMANENTLY
-    | STATUS_FOUND
-    | STATUS_BAD_REQUEST
-    | STATUS_UNAUTHORIZED
-    | STATUS_FORBIDDEN
-    | STATUS_METHOD_NOT_ALLOWED
-    | STATUS_REQUEST_CONTENT_TOO_LARGE
-    | STATUS_TOO_MANY_REQUESTS
-    | STATUS_INTERNAL_SERVER_ERROR
-}
-
-public func toUInt16(s: HttpStatusCode): UInt16 {
-    match (s) {
-        case STATUS_OK => return 200
-        case STATUS_MOVED_PERMANENTLY => return 301
-        case STATUS_FOUND => return 302
-        case STATUS_BAD_REQUEST => return 400
-        case STATUS_UNAUTHORIZED => return 401
-        case STATUS_FORBIDDEN => return 403
-        case STATUS_METHOD_NOT_ALLOWED => return 405
-        case STATUS_REQUEST_CONTENT_TOO_LARGE => return 413
-        case STATUS_TOO_MANY_REQUESTS => return 429
-        case STATUS_INTERNAL_SERVER_ERROR => return 500
-    }
+/// 状态码常量
+///
+/// 用 class + static let 而不是 enum：tang 里既有 .status(HttpStatusCode.X) 的用法，
+/// 也有 var defaultStatus: UInt16 = HttpStatusCode.X 的用法，
+/// 直接暴露成 UInt16 可以让两处都不必改写。
+public class HttpStatusCode {
+    public static let STATUS_OK: UInt16 = 200
+    public static let STATUS_MOVED_PERMANENTLY: UInt16 = 301
+    public static let STATUS_FOUND: UInt16 = 302
+    public static let STATUS_BAD_REQUEST: UInt16 = 400
+    public static let STATUS_UNAUTHORIZED: UInt16 = 401
+    public static let STATUS_FORBIDDEN: UInt16 = 403
+    public static let STATUS_NOT_FOUND: UInt16 = 404
+    public static let STATUS_METHOD_NOT_ALLOWED: UInt16 = 405
+    public static let STATUS_REQUEST_CONTENT_TOO_LARGE: UInt16 = 413
+    public static let STATUS_TOO_MANY_REQUESTS: UInt16 = 429
+    public static let STATUS_INTERNAL_SERVER_ERROR: UInt16 = 500
 }
 
 /// 日志级别（原 stdx.log.LogLevel 的最小替身）
@@ -152,6 +142,28 @@ public class TCForm {
             return None
         }
         return Some(v.toStr())
+    }
+
+    /// 全部键（签名与 stdx 的 Form 对齐）
+    public func keys(): ArrayList<String> {
+        let out = ArrayList<String>()
+        let n = args.count()
+        var i: Int64 = 0
+        while (i < n) {
+            out.add(args.keyAt(i).toStr())
+            i += 1
+        }
+        return out
+    }
+
+    /// 取同名全部值
+    public func getAll(key: String): ArrayList<String> {
+        let out = ArrayList<String>()
+        let v = args.get(key)
+        if (!v.isEmpty()) {
+            out.add(v.toStr())
+        }
+        return out
     }
 }
 
@@ -285,7 +297,7 @@ public class TCRequest {
 
     public prop remoteAddr: String {
         get() {
-            match (ctx.remoteAddr) {
+            match (ctx.remoteAddress()) {
                 case Some(a) => return a.toString()
                 case None => return ""
             }
@@ -319,11 +331,6 @@ public class TCResponseBuilder {
         return this
     }
 
-    public func status(code: HttpStatusCode): TCResponseBuilder {
-        ctx.setStatusCode(toUInt16(code))
-        return this
-    }
-
     public func header(key: String, value: String): TCResponseBuilder {
         ctx.setHeader(key, value)
         return this
@@ -339,8 +346,104 @@ public class TCResponseBuilder {
         return this
     }
 
+    public func body(b: Array<Byte>): TCResponseBuilder {
+        ctx.setBodyArray(b)
+        return this
+    }
+
+    public func body(s: InputStream): TCResponseBuilder {
+        // 流式源：读到 EOF 后按定长写（json 等路径会走到这里）
+        let data = ArrayList<Byte>()
+        let buf = Array<Byte>(8192, repeat: 0)
+        while (true) {
+            let n = try {
+                s.read(buf)
+            } catch (e: Exception) {
+                0
+            }
+            if (n <= 0) {
+                break
+            }
+            var i: Int64 = 0
+            while (i < n) {
+                data.add(buf[i])
+                i += 1
+            }
+        }
+        let out = Array<Byte>(data.size, repeat: 0)
+        var k: Int64 = 0
+        while (k < data.size) {
+            out[k] = data[k]
+            k += 1
+        }
+        ctx.setBodyArray(out)
+        return this
+    }
+
     /// 与 stdx 对齐：build() 只是取最终响应对象，tachyon 在 handler 返回时统一写出
     public func build(): Unit {
         ()
+    }
+}
+
+// ----------------------------------------------------------------------------
+// Cookie
+// ----------------------------------------------------------------------------
+
+/// Set-Cookie 构造（原 stdx.net.http.Cookie 的最小替身）
+public class Cookie {
+    public var name: String
+    public var value: String
+    public var maxAge: ?Int64 = None
+    public var path: String = ""
+    public var domain: String = ""
+    public var httpOnly: Bool = false
+    public var secure: Bool = false
+    public var sameSite: String = ""
+
+    public init(name: String, value: String, maxAge!: ?Int64 = None, path!: String = "",
+                domain!: String = "", httpOnly!: Bool = false, secure!: Bool = false,
+                sameSite!: String = "") {
+        this.name = name
+        this.value = value
+        this.maxAge = maxAge
+        this.path = path
+        this.domain = domain
+        this.httpOnly = httpOnly
+        this.secure = secure
+        this.sameSite = sameSite
+    }
+
+    /// 生成 Set-Cookie 头的值
+    public func toSetCookieString(): String {
+        var sb = StringBuilder()
+        sb.append(name)
+        sb.append("=")
+        sb.append(value)
+        if (!path.isEmpty()) {
+            sb.append("; Path=")
+            sb.append(path)
+        }
+        if (!domain.isEmpty()) {
+            sb.append("; Domain=")
+            sb.append(domain)
+        }
+        match (maxAge) {
+            case Some(v) =>
+                sb.append("; Max-Age=")
+                sb.append(v.toString())
+            case None => ()
+        }
+        if (httpOnly) {
+            sb.append("; HttpOnly")
+        }
+        if (secure) {
+            sb.append("; Secure")
+        }
+        if (!sameSite.isEmpty()) {
+            sb.append("; SameSite=")
+            sb.append(sameSite)
+        }
+        return sb.toString()
     }
 }

@@ -1,7 +1,6 @@
 package tang
 
-import stdx.log.LogLevel
-import stdx.net.http.{ServerBuilder, Server}
+import ystyle::tachyon.Server
 import cjpminfo.*
 
 ///
@@ -10,13 +9,13 @@ import cjpminfo.*
 ///
 public class Tang {
     var router: Router
-    var server: Option<Server>
+    var server: Option<Server> = None
     var host: String = "127.0.0.1"
     var port: UInt16 = 8080
     var printBanner: Bool = true
     var printRoutes: Bool = true
     var shutdownCallback: ?() -> Unit = None
-    var logLevel: LogLevel = LogLevel.ERROR  // 默认压掉 stdx 连接噪音日志（Socket is closed 等）
+    var logLevel: LogLevel = LogLevel.ERROR  // 保留字段以兼容旧 API；tachyon 默认不打连接日志
 
     /// 创建 Tang 应用实例
     public init() {
@@ -67,7 +66,7 @@ public class Tang {
         this
     }
 
-    /// 设置 stdx Server 日志级别（默认 ERROR，压连接噪音日志）
+    /// 设置日志级别（保留 API；tachyon 侧默认不输出连接日志）
     public func setLogLevel(level: LogLevel): Tang {
         this.logLevel = level
         this
@@ -75,17 +74,18 @@ public class Tang {
 
     /// 启动应用（阻塞）- 使用配置的 host 和 port
     public func listen(): Unit {
-        listen({ _: ServerBuilder => () })
+        listen({ _: Server => () })
     }
 
-    /// 启动应用（阻塞）- 使用配置的 host 和 port，支持 builder 定制 stdx ServerBuilder
-    /// builder 在 build 前调用，可配置 TLS、超时、协程池、HTTP/2 参数等
+    /// 启动应用（阻塞）- 使用配置的 host 和 port，支持 builder 定制 tachyon Server
+    ///
+    /// builder 在 serve 前调用，可配置超时、并发上限、最大请求体、缓冲区大小等。
     ///
     /// 示例：
     /// ```cj
-    /// app.listen({ sb => sb.tlsConfig(tlsCfg).readTimeout(5 * Duration.second) })
+    /// app.listen({ srv => srv.readTimeout = 5 * Duration.second })
     /// ```
-    public func listen(builder: (ServerBuilder) -> Unit): Unit {
+    public func listen(builder: (Server) -> Unit): Unit {
         // 打印 Banner
         if (this.printBanner) {
             this.router.printBanner(version: TANG_VERSION, port: this.port)
@@ -96,22 +96,14 @@ public class Tang {
             this.router.printRoutes()
         }
 
-        // 构建并启动服务器
-        let sb = ServerBuilder()
-            .distributor(this.router)
-            .addr(this.host)
-            .port(this.port)
-        builder(sb)
-        let server = sb.build()
-        server.logger.level = this.logLevel
-        this.server = server
-        
-        // 注册 shutdown 回调
-        if (let Some(cb) <- shutdownCallback) {
-            server.onShutdown(cb)
-        }
-        
-        server.serve()
+        // 构建并启动服务器（tachyon：每连接一协程，handler 内跑路由与中间件链）
+        let router = this.router
+        let srv = Server({ ctx => router.handle(ctx) })
+        srv.name = "tang"
+        builder(srv)
+        this.server = Some(srv)
+
+        srv.listenAndServe(this.host, this.port)
     }
 
     /// 启动应用（阻塞）- 指定端口
@@ -155,13 +147,13 @@ public class Tang {
     public func stop(): Unit {
         match (this.server) {
             case Some(s) =>
-                s.closeGracefully()
+                s.shutdown()
                 this.server = None
             case None => ()
         }
     }
     
-    /// 获取底层 stdx Server
+    /// 获取底层 tachyon Server
     public func getStdServer(): ?Server {
         this.server
     }
@@ -169,7 +161,7 @@ public class Tang {
     /// 注册 shutdown 回调
     public func onShutdown(callback: () -> Unit): Unit {
         match (this.server) {
-            case Some(s) => s.onShutdown(callback)
+            case Some(s) => this.shutdownCallback = Some(callback)
             case None => ()
         }
     }

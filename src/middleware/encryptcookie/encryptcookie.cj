@@ -8,8 +8,7 @@ import stdx.crypto.digest.HashType
 import stdx.crypto.crypto.SecureRandom
 import stdx.encoding.hex.{toHexString, fromHexString}
 import stdx.encoding.base64.{toBase64String, fromBase64String}
-import tang.{MiddlewareFunc, TangHttpContext}
-import stdx.net.http.Cookie
+import tang.{MiddlewareFunc, TangHttpContext, Cookie}
 
 /// EncryptCookie 中间件配置选项
 public type EncryptCookieOption = (EncryptCookieConfig) -> Unit

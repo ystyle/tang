@@ -1,6 +1,5 @@
 package tang
 
-import stdx.net.http.{HttpStatusCode, HttpResponseBuilder}
 
 /// Fiber 风格链式 API - 核心响应操作
 extend TangHttpContext {

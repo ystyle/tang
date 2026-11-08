@@ -1,12 +1,11 @@
 package tang
 
-import std.fs.Path
+import std.fs.{Path, File}
 import std.convert.*
 import std.collection.{ArrayList, HashMap, HashSet}
 import std.io.{ByteBuffer, InputStream}
-import stdx.net.http.{HttpStatusCode, HttpContext, HttpRequest, HttpResponseBuilder, FileHandler, FileHandlerType, WebSocket, HttpHeaders, HttpRequestHandler}
+import ystyle::tachyon.{RequestCtx, Server}
 import stdx.encoding.url.{UserInfo, Form}
-import stdx.crypto.common.Certificate
 import stdx.serialization.serialization.*
 import stdx.encoding.json.stream.{JsonSerializable, JsonDeserializable, JsonWriter, JsonReader}
 import stdx.encoding.base64.fromBase64String
@@ -17,74 +16,54 @@ public type HandlerFunc = (TangHttpContext) -> Unit
 
 public type MiddlewareFunc = (HandlerFunc) -> HandlerFunc
 
-/// 把 stdx 函数式 handler（方法形态）转成 tang handler
-/// 转成 HandlerFunc 后走 Group.wrap，自动享受所在 group 的中间件链
-public func fromStd(fn: (HttpContext) -> Unit): HandlerFunc {
-    return {
-        ctx => fn(ctx.context)
-    }
-}
-
-/// 把任意 stdx HttpRequestHandler（类形态：FuncHandler/FileHandler/NotFoundHandler/...）转成 tang handler
-public func fromStd(handler: HttpRequestHandler): HandlerFunc {
-    return {
-        ctx => handler.handle(ctx.context)
-    }
-}
-
 public class TangHttpContext {
     var kv: ?HashMap<String, Any> = None  // 延迟初始化，减少 GC 压力
-    let _context: HttpContext
+    let _ctx: RequestCtx
     let _params: Params
+    var _req: ?TCRequest = None
+    var _resp: ?TCResponseBuilder = None
     var bodyraw: ?Array<Byte> = None
     var _multipartForm: ?MulitpartForm = None
     var _multipartFormBoundary:?String = None
     var _requestId: ?String = None  // 独立的 requestId 字段，避免使用 HashMap
     var _csrfToken: ?String = None  // 独立的 csrfToken 字段，避免使用 HashMap
 
-    init(context: HttpContext, params: Params) {
-        this._context = context
+    init(ctx: RequestCtx, params: Params) {
+        this._ctx = ctx
         this._params = params
     }
 
-    /// 底层 stdx HttpContext（用于 WebSocket upgrade 等高级操作）
-    public prop context: HttpContext {
+    /// 底层 tachyon 请求上下文（hijack、setBodyStream 等高级操作用）
+    public prop raw: RequestCtx {
         get() {
-            this._context
+            this._ctx
         }
     }
-    
-    /// WebSocket 升级，返回 WebSocket 实例用于双向通信
-    /// headersFunc: 自定义响应头，接收 TangHttpContext 返回 HttpHeaders
-    public func upgrade(subProtocols!: ArrayList<String> = ArrayList<String>(),
-                         origins!: ArrayList<String> = ArrayList<String>(),
-                         headersFunc!: (TangHttpContext) -> HttpHeaders = {_: TangHttpContext => HttpHeaders()}): WebSocket {
-        let ctx = this
-        WebSocket.upgradeFromServer(
-            this._context, 
-            subProtocols: subProtocols, 
-            origins: origins, 
-            userFunc: { req: HttpRequest =>
-                headersFunc(ctx)
+
+    public prop request: TCRequest {
+        get() {
+            match (this._req) {
+                case Some(r) => r
+                case None =>
+                    let r = TCRequest(this._ctx)
+                    this._req = Some(r)
+                    r
             }
-        )
-    }
-    
-    public prop request: HttpRequest {
-        get() {
-            this._context.request
         }
     }
-    public prop responseBuilder: HttpResponseBuilder {
+
+    public prop responseBuilder: TCResponseBuilder {
         get() {
-            this._context.responseBuilder
+            match (this._resp) {
+                case Some(r) => r
+                case None =>
+                    let r = TCResponseBuilder(this._ctx)
+                    this._resp = Some(r)
+                    r
+            }
         }
     }
-    public prop clientCertificate: Option<Array<Certificate>> {
-        get() {
-            this._context.clientCertificate
-        }
-    }
+
     public func kvGet<T>(key: String): ?T {
         if (let Some(map) <- this.kv) {
             let v = map.get(key)
@@ -224,8 +203,8 @@ public class TangHttpContext {
 
     public func queries(): HashMap<String, Array<String>> {
         let map = HashMap<String, Array<String>>()
-        let queryOption = this.request.url.query
-        if (let Some(query) <- queryOption) {
+        let query = this.request.url.query
+        if (query.size > 0) {
             let splits = query.split('&')
             for (spilt in splits) {
                 if (spilt.contains(';')) {
@@ -334,19 +313,19 @@ public class TangHttpContext {
     }
 
     public func json<T>(value: T): Unit where T <: JsonSerializable  {
-        this.jsonWithCode(HttpStatusCode.STATUS_OK, value)
+        this.jsonWithCode(200, value)
     }
 
     public func jsonWithCode<T>(code: UInt16, value: T): Unit where T <: JsonSerializable  {
         let stream = ByteBuffer()
-        this.responseBuilder.status(code).body(stream)
         let writer = JsonWriter(stream)
         value.toJson(writer)
         writer.flush()
         stream.flush()
+        this.responseBuilder.status(code).body(stream.bytes())
     }
     public func writeString<T>(value: T): Unit where T <: ToString {
-        this.writeStringWithCode(HttpStatusCode.STATUS_OK, value)
+        this.writeStringWithCode(200, value)
     }
 
     public func writeStringWithCode<T>(code: UInt16, value: T): Unit where T <: ToString {
@@ -358,8 +337,15 @@ public class TangHttpContext {
     }
 
     public func download(path:Path):Unit {
-        let hf = FileHandler(path.toString(), handlerType:FileHandlerType.DownLoad)
-        hf.handle(this.context)
+        // 下载：读文件内容 + Content-Disposition（tachyon 无 FileHandler，直接读字节）
+        try {
+            let content = File.readFrom(path)
+            let q = "\"\""
+            this.responseBuilder.header("Content-Disposition", "attachment; filename=" + q + path.fileName + q)
+            this.responseBuilder.body(content)
+        } catch (e: Exception) {
+            this.responseBuilder.status(HttpStatusCode.STATUS_NOT_FOUND).body("404 page not found")
+        }
     }
 
     public func getHeader(key:String):?String {
@@ -424,4 +410,3 @@ extend Form {
         return keys.toArray()
     }
 }
-

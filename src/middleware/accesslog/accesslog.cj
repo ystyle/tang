@@ -113,8 +113,7 @@ public func newAccessLog(opts: Array<AccessLogOption>): MiddlewareFunc {
             let url = ctx.request.url
             let method = ctx.request.method
             let latency = DateTime.now() - t
-            let response = ctx.responseBuilder.build()
-            let code = response.status
+            let code = ctx.raw.statusCode()
 
             // 构建日志字段
             var attrs = ArrayList<(String, LogValue)>()

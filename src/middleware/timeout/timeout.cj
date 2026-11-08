@@ -2,7 +2,6 @@ package tang.middleware.timeout
 
 import std.convert.Parsable
 import std.time.DateTime
-import stdx.net.http.{HttpStatusCode}
 import tang.{MiddlewareFunc, TangHttpContext}
 
 /// 超时配置选项

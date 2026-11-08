@@ -6,8 +6,7 @@ import std.sync.Mutex
 import std.time.DateTime
 import stdx.crypto.crypto.SecureRandom
 import stdx.encoding.hex.toHexString
-import stdx.net.http.Cookie
-import tang.{MiddlewareFunc, TangHttpContext}
+import tang.{MiddlewareFunc, TangHttpContext, Cookie}
 
 /// Session 数据接口
 public interface SessionData {

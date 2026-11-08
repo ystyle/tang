@@ -1,8 +1,7 @@
 package tang.middleware.keyauth
 
 import std.collection.{HashMap, ArrayList}
-import stdx.net.http.{HttpStatusCode}
-import tang.{MiddlewareFunc, TangHttpContext}
+import tang.{MiddlewareFunc, TangHttpContext, HttpStatusCode}
 
 /// Key auth 中间件配置选项
 public type KeyAuthOption = (KeyAuthConfig) -> Unit

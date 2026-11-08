@@ -1,6 +1,5 @@
 package tang
 
-import stdx.net.http.Protocol
 import std.convert.Parsable
 
 /// Fiber 风格链式 API - 请求信息增强

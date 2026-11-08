@@ -1,6 +1,5 @@
 package tang
 
-import stdx.net.http.Cookie
 import std.collection.HashMap
 
 /// Fiber 风格链式 API - Cookie 操作（使用仓颉原生 Cookie）

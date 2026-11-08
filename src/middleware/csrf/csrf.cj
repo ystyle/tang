@@ -8,8 +8,7 @@ import stdx.crypto.crypto.SecureRandom
 import std.time.DateTime
 import stdx.encoding.hex.{toHexString, fromHexString}
 import std.convert.Parsable
-import tang.{MiddlewareFunc, TangHttpContext}
-import stdx.net.http.HttpStatusCode
+import tang.{MiddlewareFunc, TangHttpContext, HttpStatusCode}
 
 /// CSRF 中间件配置选项
 public type CSRFOption = (CSRFConfig) -> Unit

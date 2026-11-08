@@ -1,8 +1,7 @@
 package tang.middleware.bodylimit
 
 import std.convert.Parsable
-import stdx.net.http.HttpStatusCode
-import tang.{MiddlewareFunc, TangHttpContext}
+import tang.{MiddlewareFunc, TangHttpContext, HttpStatusCode}
 
 /// Body limit 中间件配置选项
 public type BodyLimitOption = (BodyLimitConfig) -> Unit

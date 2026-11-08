@@ -8,7 +8,6 @@ import stdx.net.http.HttpResponse
 import stdx.net.http.HttpRequestBuilder
 import stdx.net.http.HttpRequest
 import tang.{MiddlewareFunc, TangHttpContext}
-import stdx.net.http.HttpStatusCode
 
 /// Proxy 中间件配置选项
 public type ProxyOption = (ProxyConfig) -> Unit

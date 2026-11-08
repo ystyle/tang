@@ -1,6 +1,5 @@
 package tang.middleware.redirect
 
-import stdx.net.http.{HttpStatusCode}
 import tang.{HandlerFunc, MiddlewareFunc, TangHttpContext}
 
 /// 重定向处理器

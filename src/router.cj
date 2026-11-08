@@ -3,12 +3,10 @@ package tang
 import std.sync.Mutex
 import std.collection.HashMap
 import std.collection.ArrayList
-import stdx.net.http.{HttpContext, FuncHandler, RedirectHandler, NotFoundHandler, HttpRequestHandler, HttpRequestDistributor}
-import stdx.net.http.HttpStatusCode
-import stdx.encoding.url.URL
+import ystyle::tachyon.RequestCtx
 import tang.radix.{RouteNode}
 
-public class Router <: HttpRequestDistributor {
+public class Router {
     var config: Config
     var _group: Group
     let tree: RouteNode
@@ -32,26 +30,13 @@ public class Router <: HttpRequestDistributor {
         }
     }
 
-    /// stdx 风格路径级注册（不区分 method，对应 tang 的 all() 语义）
-    /// 注册后任意 HTTP 方法都能命中该路径；路径支持 :param / * 语法
-    public func register(path: String, handler: HttpRequestHandler): Unit {
-        this._group.handle("*", path, fromStd(handler))
-    }
-
-    /// stdx 风格路径级注册（函数式重载）
-    public func register(path: String, handler: (HttpContext) -> Unit): Unit {
-        this.register(path, FuncHandler(handler))
-    }
-
-    public func distribute(_: String): HttpRequestHandler {
-        return FuncHandler(
-            {
-                ctx =>
-                let (handler, params) = this.lookup(ctx)
-                let tangctx = TangHttpContext(ctx, params)
-                handler(tangctx)
-            }
-        )
+    /// tachyon 入口：每请求调用一次，跑完整中间件链并写出响应
+    ///
+    /// 这是替换 stdx 分发器后的唯一入口，由 tachyon.Server 的 handler 调用。
+    public func handle(ctx: RequestCtx): Unit {
+        let (handler, params) = this.lookupTC(ctx)
+        let tangctx = TangHttpContext(ctx, params)
+        handler(tangctx)
     }
 
     public func group(path:String): Group {
@@ -83,10 +68,11 @@ public class Router <: HttpRequestDistributor {
         }
     }
 
-    func lookup(ctx: HttpContext): (HandlerFunc, Params) {
-        var path = ctx.request.url.rawPath
+    func lookupTC(ctx: RequestCtx): (HandlerFunc, Params) {
+        let req = TCRequest(ctx)
+        var path = req.url.rawPath
         if (path == "") {
-            path = ctx.request.url.path
+            path = req.url.path
         }
 
         // 应用路径重写规则（在路由匹配之前）
@@ -98,7 +84,7 @@ public class Router <: HttpRequestDistributor {
             }
         }
 
-        let method = ctx.request.method.toString()
+        let method = req.method
 
         // 使用 radix tree 查找
         var (node, radixParams) = this.tree.searchRoute(method, path)
@@ -141,7 +127,7 @@ public class Router <: HttpRequestDistributor {
         }
 
         // 没找到
-        let redir = this.redir(ctx.request.method.toString(), path)
+        let redir = this.redir(TCRequest(ctx).method, path)
         if (let Some(fn) <- redir) {
             return (fn, Params())
         }
@@ -222,9 +208,10 @@ public class Router <: HttpRequestDistributor {
 
 func redirectHandler(newPath: String): HandlerFunc {
     return {
-        _ =>
-        let newUrl = URL.parse(newPath)
-        RedirectHandler(newUrl.toString(), HttpStatusCode.STATUS_MOVED_PERMANENTLY).handle
+        ctx =>
+        ctx.responseBuilder.status(HttpStatusCode.STATUS_MOVED_PERMANENTLY)
+        ctx.responseBuilder.header("Location", newPath)
+        ctx.responseBuilder.body("")
     }
 }
 
@@ -233,5 +220,6 @@ func defaultMethodNotAllowedHandler(ctx: TangHttpContext): Unit {
 }
 
 func defaultNoFoundHandler(ctx: TangHttpContext): Unit {
-    NotFoundHandler().handle(ctx.context)
+    ctx.responseBuilder.status(HttpStatusCode.STATUS_NOT_FOUND)
+    ctx.responseBuilder.body("404 page not found")
 }

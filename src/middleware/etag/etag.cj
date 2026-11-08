@@ -2,7 +2,6 @@ package tang.middleware.etag
 
 import stdx.crypto.digest.{SHA256, MD5}
 import stdx.encoding.hex.toHexString
-import stdx.net.http.{HttpStatusCode}
 import tang.{MiddlewareFunc, TangHttpContext}
 import std.collection.ArrayList
 
