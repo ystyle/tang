@@ -1,0 +1,7 @@
+version = 0
+
+[requires]
+  cjpminfo = {version = "1.2.1"}
+  "opencj::multipart" = {version = "0.1.3"}
+  tang = {version = "2.0.0"}
+  "ystyle::tachyon" = {version = "0.1.0"}

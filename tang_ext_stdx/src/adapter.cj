@@ -1,6 +1,7 @@
 package tang_ext_stdx
 
 import std.io.{ByteBuffer, InputStream}
+import std.collection.HashMap
 import stdx.net.http.{HttpContext, HttpRequestDistributor, HttpRequestHandler, FuncHandler, Server, ServerBuilder}
 import tang.{Tang, TangHttpContext, HandlerFunc, Params}
 import ystyle::tachyon.{newDetachedCtx, snapshotResponse, DetachedRequest, RequestCtx}
@@ -55,11 +56,11 @@ func toDetached(stdc: HttpContext): DetachedRequest {
             d.headers.add((name, v))
         }
     }
-    d.body = readAll(req.body, req.bodySize)
+    d.body = readAll(req.body)
     return d
 }
 
-func readAll(stream: InputStream, size: ?Int64): Array<Byte> {
+func readAll(stream: InputStream): Array<Byte> {
     let buf = ByteBuffer()
     let chunk = Array<Byte>(8192, repeat: 0)
     while (true) {
@@ -107,19 +108,26 @@ func bridge(app: Tang, stdc: HttpContext): Unit {
 
 class TangDistributor <: HttpRequestDistributor {
     let app: Tang
-    let handler: HttpRequestHandler
+    /// 兜底 handler：把请求整体桥接给 tang 路由
+    let bridgeHandler: HttpRequestHandler
+    /// stdx 风格的精确路径注册（distribute 时优先命中）
+    let registered = HashMap<String, HttpRequestHandler>()
 
     init(app: Tang) {
         this.app = app
-        this.handler = FuncHandler({ stdc => bridge(app, stdc) })
+        this.bridgeHandler = FuncHandler({ stdc => bridge(app, stdc) })
     }
 
+    /// 支持 stdx 风格的路径级注册：精确路径优先，其余交给 tang 路由
     public func register(path: String, handler: HttpRequestHandler): Unit {
-        throw Exception("tang_ext_stdx: 路由请在 tang 应用上注册（app.get/post/...）")
+        registered[path] = handler
     }
 
     public func distribute(path: String): HttpRequestHandler {
-        return handler
+        match (registered.get(path)) {
+            case Some(h) => h
+            case None => bridgeHandler
+        }
     }
 }
 
