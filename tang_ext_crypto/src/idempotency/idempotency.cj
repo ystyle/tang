@@ -1,4 +1,4 @@
-package tang.middleware.idempotency
+package tang_ext_crypto.idempotency
 
 import std.collection.HashMap
 import std.collection.ArrayList
@@ -246,7 +246,7 @@ public func withErrorHandler(handler: (TangHttpContext) -> Unit): IdempotencyOpt
 ///
 /// 示例：
 /// ```cj
-/// import tang.middleware.idempotency.{idempotency, withLifetime, withKeyHeader}
+/// import tang_ext_crypto.idempotency.{idempotency, withLifetime, withKeyHeader}
 ///
 /// r.use(idempotency([
 ///     withKeyHeader("X-Idempotency-Key"),  // 从 header 获取 key

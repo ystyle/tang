@@ -1,4 +1,4 @@
-package tang.middleware.etag
+package tang_ext_crypto.etag
 
 import stdx.crypto.digest.{SHA256, MD5}
 import stdx.encoding.hex.toHexString

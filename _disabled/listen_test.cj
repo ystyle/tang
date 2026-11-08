@@ -1,7 +1,7 @@
 package tang
 
 import std.sync.Mutex
-import stdx.log.LogLevel
+
 import stdx.net.http.{ClientBuilder}
 
 /// 闭包内标志位（仓颉闭包不能修改捕获的裸 var，用 class 包装）

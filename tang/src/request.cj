@@ -5,8 +5,6 @@ import std.convert.*
 import std.collection.{ArrayList, HashMap, HashSet}
 import std.io.{ByteBuffer, InputStream}
 import ystyle::tachyon.{RequestCtx, Server}
-import stdx.encoding.url.{UserInfo, Form}
-import stdx.encoding.base64.fromBase64String
 import opencj::multipart.*
 import tang.radix.RouteParams
 
@@ -371,16 +369,3 @@ public class Params {
     }
 }
 
-extend Form {
-    func keys(): Array<String> {
-        let qs = this.toEncodeString()
-        let pairs = qs.split("&")
-        let keys = HashSet<String>()
-        for (key in pairs) {
-            if (let Some(i) <- key.indexOf("=")) {
-                keys.add(key[0..i])
-            }
-        }
-        return keys.toArray()
-    }
-}

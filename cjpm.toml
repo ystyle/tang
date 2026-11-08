@@ -1,4 +1,4 @@
 [workspace]
-  members = ["tang", "tang_ext_json_seajson"]
-  build-members = ["tang", "tang_ext_json_seajson"]
+  members = ["tang", "tang_ext_json_seajson", "tang_ext_crypto"]
+  build-members = ["tang", "tang_ext_json_seajson", "tang_ext_crypto"]
   test-members = ["tang"]

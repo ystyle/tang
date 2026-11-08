@@ -1,4 +1,4 @@
-package tang.middleware.encryptcookie
+package tang_ext_crypto.encryptcookie
 
 import std.collection.ArrayList
 import stdx.crypto.crypto.SM4
@@ -173,7 +173,7 @@ public func withExcludeCookies(names: Array<String>): EncryptCookieOption {
 ///
 /// 示例：
 /// ```cj
-/// import tang.middleware.encryptcookie.{encryptCookie, withKeysFromHex, withExcludeCookie}
+/// import tang_ext_crypto.encryptcookie.{encryptCookie, withKeysFromHex, withExcludeCookie}
 ///
 /// // 使用十六进制密钥
 /// r.use(encryptCookie([
@@ -267,7 +267,7 @@ public func encryptCookie(): MiddlewareFunc {
 ///
 /// 示例：
 /// ```cj
-/// import tang.middleware.encryptcookie.encryptCookieValue
+/// import tang_ext_crypto.encryptcookie.encryptCookieValue
 ///
 /// r.get("/login", { ctx =>
 ///     let encKey = fromHexString("12345678901234567890123456789012") ?? Array<UInt8>(0)
@@ -288,7 +288,7 @@ public func encryptCookieValue(value: String, encryptionKey: Array<UInt8>, signK
 ///
 /// 示例：
 /// ```cj
-/// import tang.middleware.encryptcookie.decryptCookieValue
+/// import tang_ext_crypto.encryptcookie.decryptCookieValue
 ///
 /// r.get("/profile", { ctx =>
 ///     let encKey = fromHexString("12345678901234567890123456789012") ?? Array<UInt8>(0)

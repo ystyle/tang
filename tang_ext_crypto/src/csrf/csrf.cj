@@ -1,4 +1,4 @@
-package tang.middleware.csrf
+package tang_ext_crypto.csrf
 
 import std.regex.{Regex, RegexFlag}
 import std.collection.ArrayList
@@ -227,7 +227,7 @@ public func withErrorHandler(handler: (TangHttpContext) -> Unit): CSRFOption {
 ///
 /// 示例：
 /// ```cj
-/// import tang.middleware.csrf.{csrf, withSecretKey}
+/// import tang_ext_crypto.csrf.{csrf, withSecretKey}
 ///
 /// r.use(csrf([
 ///     withSecretKey("your-secret-key-here"),

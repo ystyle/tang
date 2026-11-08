@@ -1,4 +1,4 @@
-package tang.middleware.session
+package tang_ext_crypto.session
 
 import std.collection.HashMap
 import std.collection.ArrayList
@@ -261,7 +261,7 @@ public func withCookieHttpOnly(httpOnly: Bool): SessionOption {
 ///
 /// 示例：
 /// ```cj
-/// import tang.middleware.session.{session, withExpiration}
+/// import tang_ext_crypto.session.{session, withExpiration}
 ///
 /// r.use(session([
 ///     withExpiration(3600)  // 1 小时过期
