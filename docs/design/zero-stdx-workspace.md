@@ -59,13 +59,35 @@ tang/                         [workspace] 根：不含任何 stdx
 收益：只依赖 `tang` 的用户**完全不需要配置 `CANGJIE_STDX_PATH`**；
 需要哪块能力再引入对应成员，与 tachyon 扩展成员是同一套思路。
 
-## 4. JSON 的三条路（核心分歧）
+## 4. JSON 的四条路（2026-11-08 更新：SeaJSON 改变了结论）
+
+### 4.0 先看 SeaJSON（`seajson` v1.5.1，中心仓）
+
+- **纯 std，零 stdx**（实测：源码 6450 行无任何 `import stdx`，`[dependencies]` 为空）
+- 契约与 stdx 几乎一一对应：
+
+| stdx `json.stream` | SeaJSON |
+|---|---|
+| `JsonSerializable.toJson(JsonWriter)` | `JsonEncodable.toJsonString(): String`（另有 `JsonWriterEncodable.writeJson(JsonWriter)` 流式） |
+| `JsonDeserializable<T>.fromJson(JsonReader)` | `JsonDecodable<T>.fromJsonString(String): T` |
+
+- 已实测跑通适配形态（`probe-seajson`）：
+  ```
+  core 接口 encode(obj: Any) + 运行时下转型 JsonEncodable → {"name":"alice","age":30}
+  JsonDecodable<T>.fromJsonString → 反序列化正常
+  ```
+  即 **core 定义 `JsonCodec` 接口（收 `Any`），适配器在运行时 `match (obj) { case e: JsonEncodable => ... }`**，方法风格 `ctx.json(v)` 可以保留在 core。
+
+→ **用 SeaJSON 适配器可以做到 tang 全链路零 stdx**，这不是"少一个依赖"的程度，而是把 JSON 这个最后的硬依赖换掉了。
+
+## 4.1 四条路对比
 
 | 方案 | core 是否零 stdx | 用户接口是否要改 | `ctx.json(v)` 方法是否保留 | 备注 |
 |---|---|---|---|---|
 | **A. json 进 ext（stdx json.stream）** | ✅ | ❌ 不改 | ❌ 变函数式 `json.encode(ctx, v)` | 最简单，跟随 stdx 新主推 |
 | **B. core 自定义 JSON 接口** | ✅ | ✅ 要改（实现 tang 的接口） | ✅ 保留 | 破坏性变更 |
-| **C. core 反射实现 JSON** | ✅ | ❌ **完全不用实现**（连泛型约束都没有） | ✅ 保留 | 反射性能待测；需覆盖嵌套/集合/Option/enum |
+| **C. core 反射实现 JSON** | ✅ | ❌ 不用实现 | ✅ 保留 | 实测：反射**写字段只对 class 生效**（struct 值语义改副本），且慢；**已否决** |
+| **D. SeaJSON 适配器（新增，推荐）** | ✅ | ❌ 不改（实现 seajson 的契约，与 stdx 的写法几乎一样） | ✅ 保留（core 接口 + 运行时下转型） | 零 stdx；契约与 stdx 1:1；编解码走字符串，热路径可再优化到 `JsonWriterEncodable` |
 
 方案 C 把「JSON 必须依赖接口」这个前提绕过去了 —— 因为反射能直接读成员。
 代价是序列化比手写慢（预计 2–5 倍，待实测），换来零依赖 + 零迁移。
@@ -75,9 +97,9 @@ tang/                         [workspace] 根：不含任何 stdx
 1. **先拆 crypto**：把 csrf/session/encryptcookie/etag/idempotency 移到 `tang_ext_crypto`，
    core 里仅保留接口/注册点（这些中间件本来就要显式 `use()`，迁移成本低）。
 2. **log 自写**：一个 40 行的零依赖 logger 替掉 stdx.log，accesslog 跟着换。
-3. **JSON 选 C 起步**：core 用反射实现 `ctx.json` / `ctx.bindJson`，
-   同时保留 `tang_ext_json`（json.stream 快速路径）供性能敏感场景；
-   两者接口一致，可切换。
+3. **JSON 走 D（SeaJSON）**：core 定义 `JsonCodec` 接口；`tang_ext_json_seajson` 提供实现
+   （零 stdx，作为默认推荐）；`tang_ext_json_stdx` 保留给小半年内的迁移期。
+   编解码先走 `toJsonString/fromJsonString`，后续可优化到 `JsonWriterEncodable` 的流式写。
 4. **static / proxy / ws** 放扩展成员：static 用 tachyon FileServer，
    ws 用 hijack，proxy 需要 HTTP 客户端（tachyon 无客户端，可等 tachyon_ext 或保留 stdx）。
 
