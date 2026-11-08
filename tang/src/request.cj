@@ -24,7 +24,7 @@ public class TangHttpContext {
     var _requestId: ?String = None  // 独立的 requestId 字段，避免使用 HashMap
     var _csrfToken: ?String = None  // 独立的 csrfToken 字段，避免使用 HashMap
 
-    init(ctx: RequestCtx, params: Params) {
+    public init(ctx: RequestCtx, params: Params) {
         this._ctx = ctx
         this._params = params
     }

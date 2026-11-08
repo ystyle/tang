@@ -9,6 +9,11 @@ extend TangHttpContext {
         return this._requestId
     }
 
+    /// 设置 CSRF Token（csrf 中间件生成后回填；字段是 internal，跨包要靠这个入口）
+    public func setCsrfToken(token: String): Unit {
+        this._csrfToken = Some(token)
+    }
+
     /// 获取 CSRF Token
     /// 由 csrf 中间件设置，直接存储在 _csrfToken 字段中（避免使用 HashMap）
     public func csrfToken(): ?String {
