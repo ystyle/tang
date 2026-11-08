@@ -14,7 +14,7 @@
 
 | 成员 | 依赖 | 说明 |
 |---|---|---|
-| `tang/` | std + `ystyle::tachyon` | 核心：路由、上下文、16 个中间件、`tang.testing`、日志门面 |
+| `tang/` | std + `ystyle::tachyon` | 核心：路由、上下文、17 个中间件（含反向代理）、`tang.testing`、日志门面、`tang.http` 客户端 |
 | `tang_ext_json_seajson/` | + seajson | JSON 编解码（`ctx.json` 的 codec、`bindJson`），零 stdx |
 | `tang_ext_crypto/` | + stdx.crypto | csrf / session / encryptcookie / etag / idempotency |
 | `tang_ext_stdx/` | + stdx.net.http | stdx 兼容层（`serve` + `fromStd`） |

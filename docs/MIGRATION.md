@@ -49,7 +49,7 @@
 | `setLogLevel(LogLevel.X)` | 不变 | `LogLevel` 现在来自 `tang.log` |
 | `fromStd(fn)` | `tang_ext_stdx.fromStd(fn)` + `serve(app, host, port)` | 需要 stdx 的 server（stdx 上下文构造器 internal，见下） |
 | `app.getRouter().register(path, stdxHandler)` | — | 不再提供；用 `fromStd` + tang 路由，或直接在 stdx server 上分发 |
-| `ComposeDistributor` | — | 依赖 stdx 的 distributor 协议，改用 tachyon 的 `Router.handleWith` / `mount` |
+| `ComposeDistributor` | `tang.compose.ComposeRouter` | 语义不变（最长前缀委派、fallback），但基于 tachyon RequestCtx；子 Router 仍按完整路径注册 |
 | `app.getStdServer()` | `app.getStdServer()` 仍在 | 返回的已是 tachyon `Server`（类型变化） |
 | `ctx.context`（底层 stdx HttpContext） | 核心无此字段 | stdx 兼容模式下用 `ctx.compatContext()` 取回 |
 | `ctx.request.headers`（stdx HttpHeaders） | `ctx.request.headers`（`TCHeaders`） | `getFirst/add` 等同形，类型自研 |
@@ -64,7 +64,7 @@
 | **Cookie 类型换为 `tang.Cookie`** | 与 stdx Cookie 同形（name/value/path/domain/maxAge/httpOnly/secure/sameSite），构造器参数名一致 |
 | **HTTP 状态码常量 `HttpStatusCode.*`** | 现在是 `UInt16` 常量（原来是 stdx 的类型），可直接传 `status(...)` |
 | **WebSocket 升级** | 本分支暂未提供（`hijack` 能力在 tachyon 侧，待接） |
-| **proxy 中间件** | 暂不可用（需要 HTTP 客户端，tachyon 只有服务端），待 `tang_ext_proxy` |
+| **proxy 中间件** | 已回归核心：用自带极简 HTTP 客户端转发（零 stdx），只支持 http:// 上游，WebSocket 返回 426 |
 
 ## 四、迁移顺序建议
 

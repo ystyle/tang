@@ -38,10 +38,15 @@ public class Router {
     }
 
     /// 复用外部已构造的上下文（适配器需要把外来上下文挂上去，见 tang_ext_stdx）
+    ///
+    /// 注意：复用的是**对象身份**（适配器槽、标记位都在它身上），
+    /// 但路由参数必须用本次 lookup 的结果重填，否则子 Router/组合路由拿不到 :param。
     public func handleWith(ctx: RequestCtx, prebuilt: ?TangHttpContext): Unit {
         let (handler, params) = this.lookupTC(ctx)
         let tangctx = match (prebuilt) {
-            case Some(c) => c
+            case Some(c) =>
+                c._params = params
+                c
             case None => TangHttpContext(ctx, params)
         }
         handler(tangctx)

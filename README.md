@@ -11,7 +11,7 @@
 - **🚀 高性能** - HTTP 层换成 tachyon 后，同机实测吞吐约为原 stdx 后端的 **2.1 倍**，每请求 CPU 约为 **1/2.2**
 - **🎯 零 stdx 核心** - `tang` 核心只依赖 `std` + `tachyon`，下游**不需要配置 `CANGJIE_STDX_PATH`**
 - **⛓️ 链式 API** - Fiber 风格的流畅 API
-- **🔌 中间件生态** - 16 个零依赖中间件 + 5 个加密类（扩展成员）
+- **🔌 中间件生态** - 17 个零依赖中间件（含反向代理）+ 5 个加密类（扩展成员）
 - **🧪 内置测试框架** - `tang.testing` 不上网络、不占端口就能测路由（对标 Go `httptest`）
 - **📦 按能力拆成员** - 用不到 JSON / 加密 / stdx 兼容就不引入对应模块
 
@@ -126,9 +126,10 @@ class ApiTest {
 | [快速入门](docs/getting-started.md) | 从零建项目、依赖配置、第一个应用 |
 | [框架概述](docs/overview.md) | 架构、请求生命周期、成员划分 |
 | [API 参考](docs/api/app.md) | App / Router / Group / Context |
-| [中间件](docs/middleware/overview.md) | 16 个核心中间件 + 扩展成员 |
+| [中间件](docs/middleware/overview.md) | 17 个核心中间件 + 扩展成员 |
 | [测试框架](docs/testing.md) | `tang.testing`（对标 Go `httptest`） |
 | [stdx 兼容层](docs/stdx-compat.md) | 存量 stdx 项目平滑迁移 |
+| [组合路由](docs/api/compose.md) | 按前缀组合多个子系统（ComposeRouter） |
 | [从 1.0.x 迁移](docs/MIGRATION.md) | 旧 API → 新 API 对照 |
 | [零 stdx 化方案](docs/design/zero-stdx-workspace.md) | 为什么拆成员、JSON/日志怎么解耦 |
 | [性能](docs/advanced/performance.md) | 优化建议与实测数据 |

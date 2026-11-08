@@ -15,7 +15,7 @@ public type MiddlewareFunc = (HandlerFunc) -> HandlerFunc
 public class TangHttpContext {
     var kv: ?HashMap<String, Any> = None  // 延迟初始化，减少 GC 压力
     let _ctx: RequestCtx
-    let _params: Params
+    var _params: Params
     var _req: ?TCRequest = None
     var _resp: ?TCResponseBuilder = None
     var bodyraw: ?Array<Byte> = None

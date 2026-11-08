@@ -102,6 +102,21 @@ public class TCHeaders {
     }
 
     /// 追加一个"请求头"（供中间件传递上下文用；不进入原始报文）
+    /// 遍历所有请求头（代理转发等场景需要逐头拷贝）
+    public func forEach(f: (String, String) -> Unit): Unit {
+        ctx.visitHeaders({ name, value =>
+            f(name.toStr(), value.toStr())
+            true   // 继续遍历
+        })
+        match (added) {
+            case Some(m) =>
+                for ((k, v) in m) {
+                    f(k, v)
+                }
+            case None => ()
+        }
+    }
+
     public func add(name: String, value: String): Unit {
         let m = match (added) {
             case Some(x) => x
