@@ -13,6 +13,7 @@
 - **⛓️ 链式 API** - Fiber 风格的流畅 API
 - **🔌 中间件生态** - 17 个零依赖中间件（含反向代理）+ 5 个加密类（扩展成员）
 - **🧪 内置测试框架** - `tang.testing` 不上网络、不占端口就能测路由（对标 Go `httptest`）
+- **🔌 WebSocket** - `tang.websocket` 零 stdx 实现（握手 / 分片 / ping-pong / close）
 - **📦 按能力拆成员** - 用不到 JSON / 加密 / stdx 兼容就不引入对应模块
 
 ## 📦 模块结构

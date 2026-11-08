@@ -13,6 +13,7 @@
 - **⛓️ 链式 API** - Fiber 风格的流畅 API
 - **🔌 中间件生态** - 17 个零依赖中间件（含反向代理）+ 5 个加密类（扩展成员）
 - **🧪 内置测试框架** - `tang.testing` 不上网络、不占端口就能测路由（对标 Go `httptest`）
+- **🔌 WebSocket** - `tang.websocket` 零 stdx 实现（握手 / 分片 / ping-pong / close）
 - **📦 按能力拆成员** - 用不到 JSON / 加密 / stdx 兼容就不引入对应模块
 
 ## 📦 模块结构
@@ -139,6 +140,7 @@ class ApiTest {
 | [API 参考](docs/api/app.md) | App / Router / Group / Context |
 | [中间件](docs/middleware/overview.md) | 17 个核心中间件 + 扩展成员 |
 | [测试框架](docs/testing.md) | `tang.testing`（对标 Go `httptest`） |
+| [WebSocket](docs/api/context/websocket.md) | `tang.websocket`（零 stdx 实现） |
 | [stdx 兼容层](docs/stdx-compat.md) | 存量 stdx 项目平滑迁移 |
 | [组合路由](docs/api/compose.md) | 按前缀组合多个子系统（ComposeRouter） |
 | [从 1.0.x 迁移](docs/MIGRATION.md) | 旧 API → 新 API 对照 |
@@ -163,6 +165,7 @@ app.mount("/sub", subApp.getRouter())    // 子应用挂载
 | 示例 | 展示什么 | 额外依赖 |
 |---|---|---|
 | basic / all_method / path_params / app_demo / banner_test | 路由、分组、路径参数、配置、横幅 | 仅 `tang` |
+| websocket | WebSocket 回显服务 | 仅 `tang` |
 | http_demo | 最小 HTTP 服务 | 仅 `tang` |
 | basicauth | Basic 认证 + 日志 + 恢复 | 仅 `tang` |
 | bind_query | `QueryBindable` 查询参数绑定 | `tang_ext_json_seajson` |

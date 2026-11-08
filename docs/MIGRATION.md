@@ -63,7 +63,8 @@
 | **requestid 改为 `<启动秒>-<自增>`** | 格式变化，不再是 sonyflake 的 18 位数字；旧实现还有每 10ms 只能出 256 个 ID 的硬上限（≈2.5 万/秒） |
 | **Cookie 类型换为 `tang.Cookie`** | 与 stdx Cookie 同形（name/value/path/domain/maxAge/httpOnly/secure/sameSite），构造器参数名一致 |
 | **HTTP 状态码常量 `HttpStatusCode.*`** | 现在是 `UInt16` 常量（原来是 stdx 的类型），可直接传 `status(...)` |
-| **WebSocket 升级** | 本分支暂未提供（`hijack` 能力在 tachyon 侧，待接） |
+| **WebSocket 升级** | 已提供，API 变了：`tang.websocket.websocket(handler)`（handler 拿 `WebSocketConn` 自己循环读写），
+  取代旧的 `ctx.upgrade()` + 回调风格。零 stdx（SHA1/Base64 自实现），见 [WebSocket 文档](api/context/websocket.md) |
 | **proxy 中间件** | 已回归核心：用自带极简 HTTP 客户端转发（零 stdx），只支持 http:// 上游，WebSocket 返回 426 |
 
 ## 四、迁移顺序建议

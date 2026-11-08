@@ -1,109 +1,86 @@
-# WebSocket 升级
+# WebSocket
 
-> **本分支说明**：本分支暂未提供 WebSocket 升级（tachyon 侧 hijack 能力待接），WebSocket 升级能力待 tachyon 提供双工转发后补齐，见 [迁移指南](../../MIGRATION.md)。
+> **v2.0.0 起**：WebSocket 实现在核心的 `tang.websocket` 包里，**零 stdx**
+> （SHA1 与 Base64 各自几十行自实现，只为握手算 accept key）。
+> 底层走 tachyon 的 `ctx.hijack`：握手响应由本包直接写 socket，之后连接完全交给 handler。
 
-## 概述
+## 快速开始
 
-从 `1.0.3` 开始，Tang 支持通过 `TangHttpContext.upgrade()` 将 HTTP 请求升级为 WebSocket 连接，实现服务端主动推送、实时聊天等双向通信场景。
+```cangjie
+import tang.*
+import tang.websocket.websocket
 
-**核心 API**：
-- `upgrade()` - 升级为 WebSocket 连接
-- `context` - 获取底层 `HttpContext`（高级操作）
+main() {
+    let app = Tang()
 
-## 升级连接
-
-使用 `upgrade()` 将当前请求升级为 WebSocket：
-
-```cj
-r.get("/ws", { ctx =>
-    let ws = ctx.upgrade(
-        subProtocols: ArrayList<String>(["chat"]),  // 可选子协议
-        origins: ArrayList<String>(["https://example.com"]),  // 可选来源白名单
-        headersFunc: { ctx =>  // 自定义响应头
-            let headers = HttpHeaders()
-            headers["X-Powered-By"] = "tang"
-            headers
+    app.get("/ws", websocket({ conn: WebSocketConn =>
+        // 回显：收到什么发回什么
+        while (true) {
+            match (conn.readMessage()) {
+                case Some(msg) => conn.writeText("echo:" + msg.text())
+                case None => break      // 对端关闭
+            }
         }
-    )
+    }))
 
-    ws.onMessage({ _ => 
-        // 处理客户端消息
-        ()
-    })
-
-    ws.send("hello")
-})
+    app.listen(8080u16)
+}
 ```
 
-### 参数说明
+浏览器端：
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `subProtocols` | `ArrayList<String>` | WebSocket 子协议列表，如 `["chat"]`、`["superchat"]` |
-| `origins` | `ArrayList<String>` | 允许的来源白名单，用于跨域校验 |
-| `headersFunc` | `(TangHttpContext) -> HttpHeaders` | 自定义握手响应头，接收当前 `TangHttpContext` 并返回 `HttpHeaders` |
-
-### WebSocket 发送消息
-
-升级成功后返回 `WebSocket` 实例，可以直接发送消息：
-
-```cj
-ws.send("text message")           // 发送文本
-ws.send(ByteArray([...]))         // 发送二进制
+```js
+const ws = new WebSocket("ws://127.0.0.1:8080/ws")
+ws.onmessage = (e) => console.log(e.data)
+ws.onopen = () => ws.send("hi")
 ```
 
-### 接收消息
+## API
 
-使用 `onMessage` 注册消息回调：
+### `websocket(handler: (WebSocketConn) -> Unit): HandlerFunc`
 
-```cj
-ws.onMessage({ msg =>
-    println("收到客户端消息: ${msg}")
-})
-```
+把一条路由声明为 WebSocket 端点。非升级请求会得到 `426 Upgrade Required`；
+缺 `Sec-WebSocket-Key` 返回 `400`。
 
-### 关闭连接
+### `WebSocketConn`
 
-```cj
-ws.close()
-```
+| 方法 | 说明 |
+|---|---|
+| `readMessage(): ?WsMessage` | 读一条完整消息（分片自动拼好）；返回 `None` 表示对端关闭 |
+| `writeText(text: String)` | 发文本帧（UTF-8） |
+| `writeBinary(data: Array<Byte>)` | 发二进制帧 |
+| `ping(payload: Array<Byte>)` | 发 ping |
+| `close(code!: UInt16 = 1000, reason!: String = "")` | 发 close 帧 |
+| `closeSocket()` | 直接关底层连接 |
+| `setReadTimeout(d: Duration)` | 设置读超时 |
 
-## 获取底层上下文
+### `WsMessage`
 
-需要访问底层的 `stdx.net.http.HttpContext`（如获取 socket 信息、执行高级操作）时，使用 `context` 属性：
+| 成员 | 说明 |
+|---|---|
+| `opcode: WsOpcode` | `Text` / `Binary`（控制帧已在内部处理） |
+| `data: Array<Byte>` | 负载 |
+| `text(): String` | 按 UTF-8 解成字符串 |
 
-```cj
-r.get("/debug", { ctx =>
-    let raw = ctx.context
-    // raw 是 stdx HttpContext，可访问底层能力
-    ctx.json(HashMap<String, String>([
-        ("method", raw.request.method)
-    ]))
-})
-```
+## 自动处理的部分
 
-## 应用级 WebSocket 示例
+- **握手**：校验 `Upgrade`/`Sec-WebSocket-Key`，算 `Sec-WebSocket-Accept`，回 `101`
+- **分片**：`Continuation` 帧自动拼接，`readMessage` 返回完整消息
+- **ping/pong**：收到 ping 自动回 pong；收到 close 回 close 并让 `readMessage` 返回 `None`
+- **掩码**：客户端帧自动解掩码；服务端帧按 RFC 不加掩码
 
-配合 `Tang` 应用类完整示例：
+## 边界（刻意不做）
 
-```cj
-let app = Tang()
-    .get("/ws", { ctx =>
-        let ws = ctx.upgrade()
-        ws.onMessage({ msg =>
-            // echo 消息
-            ws.send(msg)
-        })
-    })
-    .setShutdownCallback({ => 
-        println("服务器关闭前清理资源")
-    })
+| 项 | 原因 |
+|---|---|
+| `permessage-deflate` 压缩 | 需要 deflate，会把 stdx/三方依赖拉进核心 |
+| 子协议协商 | 只有 handler 知道要选哪个；需要时自己读 `Sec-WebSocket-Protocol` 并在握手前判断 |
+| 心跳定时器 | 库不该替使用者决定间隔；用 `ping()` + 自己的定时器 |
+| TLS（`wss://`） | 与 HTTP 侧一致：TLS 由 LB 终结或走 stdx.net.tls |
 
-app.listen(8080)
-```
+## 与 1.0.x 的差异
 
-## 相关链接
+旧版是 `ctx.upgrade(...)` 方法 + `ws.onMessage(...)` 回调风格，依赖 stdx.net.websocket。
+现在改成「handler 拿连接自己循环读写」的形式：更容易表达状态机，也不需要回调注册顺序。
 
-- **[辅助方法](utils.md)** - TangHttpContext 其他辅助方法
-- **[应用生命周期](../app.md)** - shutdown 回调与优雅停止
-- **[快速入门](../../getting-started.md)** - 完整应用示例
+迁移对照见 [MIGRATION.md](../../MIGRATION.md)。
