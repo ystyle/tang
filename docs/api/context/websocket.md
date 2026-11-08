@@ -1,6 +1,6 @@
 # WebSocket 升级
 
-> **本分支说明**：本分支暂未提供 WebSocket 升级（tachyon 侧 hijack 能力待接），见 _disabled/README.md。
+> **本分支说明**：本分支暂未提供 WebSocket 升级（tachyon 侧 hijack 能力待接），WebSocket 升级能力待 tachyon 提供双工转发后补齐，见 [迁移指南](../../MIGRATION.md)。
 
 ## 概述
 
