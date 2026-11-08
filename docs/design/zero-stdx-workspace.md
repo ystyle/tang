@@ -92,6 +92,68 @@ tang/                         [workspace] 根：不含任何 stdx
 方案 C 把「JSON 必须依赖接口」这个前提绕过去了 —— 因为反射能直接读成员。
 代价是序列化比手写慢（预计 2–5 倍，待实测），换来零依赖 + 零迁移。
 
+## 4.2 JSON 接口按"流式"重新设计（2026-11-08 追加）
+
+结论：**编码接口要收 sink，不要返回 String。**
+
+```cangjie
+// core（零 stdx）
+public interface JsonSink {
+    func append(piece: String): Unit   // 与 seajson 的 JsonTextSink 同形，桥接成本最低
+    func finish(): Unit
+}
+
+public interface JsonCodec {
+    /// 把 value 增量写进 sink（不物化整段 JSON）
+    func encodeTo(sink: JsonSink, value: Any): Unit
+    func contentType(): String
+}
+```
+
+core 提供两个 sink 实现：
+
+| sink | 用途 |
+|---|---|
+| `BufferJsonSink` | 默认：内部 StringBuilder，最后一次成型 → `setBodyString` |
+| `StreamJsonSink` | 大响应：直接喂 tachyon 的 `setBodyStream(stream, -1)`（chunked 直发） |
+
+以及便利函数：`encodeToString(codec, value)` = BufferJsonSink + finish。
+
+**为什么是"收 sink"而不是"传 writer"**：writer 类型属于各家 JSON 库（seajson 的 `JsonWriter`、
+stdx 的 `JsonWriter`），core 不能引用；但各家都往"文本片段"上写，所以 core 定一个极小的
+`JsonSink`，适配器把它桥接成自家的 sink 即可：
+
+```cangjie
+// tang_ext_json_seajson
+class BridgeSink <: seajson.JsonTextSink {
+    let sink: JsonSink
+    init(s: JsonSink) { this.sink = s }
+    public func append(text: String): Unit { sink.append(text) }
+    public func finish(): Unit { sink.finish() }
+}
+
+public func encodeTo(sink: JsonSink, value: Any): Unit {
+    match (value) {
+        case e: JsonWriterEncodable =>            // 真流式：逐字段写
+            e.writeJson(JsonWriter(sink: BridgeSink(sink)))
+        case e: JsonEncodable =>                  // 退化为整段
+            sink.append(e.toJsonString())
+        case _ => throw Exception("value 未实现 seajson 契约")
+    }
+}
+```
+
+实测依据：seajson 的 `JsonWriter` 有 `public init(sink!: JsonTextSink, ...)`，
+且 writer 内部就是逐片段 `sink.append(...)`，桥接成本几乎为零。
+
+**解码接口不受影响**：泛型约束 `T <: JsonDecodable<T>` 必须出现在签名里，
+所以解码留在适配器做自由函数（`bindJson<T>(ctx)`），core 不参与。
+
+**注意的代价**：seajson 的 writer 是逐片段 append（引号、数字、字符串值分开写），
+如果 sink 每次 append 都做一次 `String → Array<Byte>` 转换，会比"最后一次性 toString"更碎。
+所以默认走 `BufferJsonSink`（内部 StringBuilder，finish 时一次成型）；
+只有确实要边算边发（超大数组响应）才走 `StreamJsonSink`。
+
 ## 5. 建议落地顺序
 
 1. **先拆 crypto**：把 csrf/session/encryptcookie/etag/idempotency 移到 `tang_ext_crypto`，
