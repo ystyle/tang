@@ -1,6 +1,6 @@
 [dependencies]
-  "tang" = "2.1.0"
-  "tang_ext_crypto" = "2.1.0"
+  "tang" = "2.1.1"
+  "tang_ext_crypto" = "2.1.1"
 
 [package]
   cjc-version = "1.2.0"
