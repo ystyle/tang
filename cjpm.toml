@@ -1,9 +1,9 @@
 [workspace]
-  members = ["tang", "tang_ext_json_seajson", "tang_ext_crypto"]
-  build-members = ["tang", "tang_ext_json_seajson", "tang_ext_crypto"]
-  test-members = ["tang"]
+  members = ["tang", "tang_ext_json_seajson", "tang_ext_crypto", "tang_ext_stdx"]
+  build-members = ["tang", "tang_ext_json_seajson", "tang_ext_crypto", "tang_ext_stdx"]
+  test-members = ["tang", "tang_ext_stdx"]
 
-# stdx 只在 tang_ext_crypto 里用（crypto/hex/base64）。核心与 JSON 成员零 stdx，
+# stdx 只在扩展成员里用（crypto / stdx 兼容层）。核心与 JSON 成员零 stdx，
 # 但 workspace 模式下 target 级配置要在根上声明，成员才能解析到 stdx 的 .cjo。
 [target.x86_64-unknown-linux-gnu.bin-dependencies]
   path-option = ["${CANGJIE_STDX_PATH}"]

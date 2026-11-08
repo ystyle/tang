@@ -3,6 +3,26 @@ package tang
 /// TangHttpContext 的核心扩展
 /// 提供请求 ID、CSRF Token、中断控制等常用功能的便捷访问方法
 extend TangHttpContext {
+    /// 挂上外来上下文（供适配器使用）
+    public func setCompatContext(ctx: Object): Unit {
+        this._compatContext = Some(ctx)
+    }
+
+    /// 取外来上下文
+    public func compatContext(): ?Object {
+        return this._compatContext
+    }
+
+    /// 标记「响应已由适配器写出」
+    public func markHandledByAdapter(): Unit {
+        this._handledByAdapter = true
+    }
+
+    /// 是否已由适配器写出响应
+    public func handledByAdapter(): Bool {
+        return this._handledByAdapter
+    }
+
     /// 获取当前请求的 ID
     /// 由 requestid 中间件设置，直接存储在 _requestId 字段中（避免使用 HashMap）
     public func requestid(): ?String {

@@ -34,8 +34,16 @@ public class Router {
     ///
     /// 这是替换 stdx 分发器后的唯一入口，由 tachyon.Server 的 handler 调用。
     public func handle(ctx: RequestCtx): Unit {
+        this.handleWith(ctx, None)
+    }
+
+    /// 复用外部已构造的上下文（适配器需要把外来上下文挂上去，见 tang_ext_stdx）
+    public func handleWith(ctx: RequestCtx, prebuilt: ?TangHttpContext): Unit {
         let (handler, params) = this.lookupTC(ctx)
-        let tangctx = TangHttpContext(ctx, params)
+        let tangctx = match (prebuilt) {
+            case Some(c) => c
+            case None => TangHttpContext(ctx, params)
+        }
         handler(tangctx)
     }
 

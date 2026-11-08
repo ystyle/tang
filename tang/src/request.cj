@@ -21,6 +21,11 @@ public class TangHttpContext {
     var bodyraw: ?Array<Byte> = None
     var _multipartForm: ?MulitpartForm = None
     var _multipartFormBoundary:?String = None
+    /// 适配器槽：让扩展成员把「外来上下文」（如 stdx 的 HttpContext）挂在当前请求上。
+    /// 用 Object 而不是具体类型，core 才能保持零依赖。
+    var _compatContext: ?Object = None
+    /// 由适配器（如 fromStd）标记：响应已经由适配器自己写出，core 不要再用快照覆盖。
+    var _handledByAdapter: Bool = false
     var _requestId: ?String = None  // 独立的 requestId 字段，避免使用 HashMap
     var _csrfToken: ?String = None  // 独立的 csrfToken 字段，避免使用 HashMap
 

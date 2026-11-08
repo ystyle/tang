@@ -11,8 +11,8 @@ HTTP 层已从 stdx.net.http 换成 tachyon，凡是直接依赖 stdx 类型的�
 |---|---|---|
 | proxy/ | 依赖 stdx.net.http.Client（tang core 零 stdx） | 待做 HTTP 客户端能力（tachyon 目前只有服务端），或拆成 tang_ext_proxy 引 stdx 客户端 |
 | compose/ | ComposeDistributor 实现的是 stdx 的 HttpRequestDistributor | 按 tachyon 的 Router.handle 重做 |
-| fromstd_test.cj | 测 fromStd()（stdx handler 适配），该 API 已随 stdx 移除 | 若将来做 stdx 兼容层再恢复 |
-| router_register_test.cj | 测 stdx 风格的 Router.register(path, HttpRequestHandler) | 同上 |
+| fromstd_test.cj | 测旧版 fromStd()（基于 stdx server 的 tang Router 注册） | 已由 tang_ext_stdx 覆盖（serve + fromStd），此文件仅留作历史参考 |
+| router_register_test.cj | 测 stdx 风格的 Router.register(path, HttpRequestHandler) | stdx 路由注册改由 tang_ext_stdx 的 serve 承担，不再提供同名 API |
 | compose_distributor_test.cj | 测上面的 ComposeDistributor | 同上 |
 
 ## 已经重写回来的
