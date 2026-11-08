@@ -1,0 +1,16 @@
+[dependencies]
+  "tang" = { path = "../tang" }
+  "seajson" = "1.5.1"
+
+[package]
+  cjc-version = "1.2.0"
+  name = "tang_ext_json_seajson"
+  version = "0.1.0"
+  description = "tang 的 JSON 适配器：基于 SeaJSON（零 stdx）"
+  output-type = "static"
+  src-dir = "src"
+  compile-option = "-O2 -Woff unused"
+  license = ["MulanPSL-2.0"]
+  authors = ["ystyle"]
+  include = ["src"]
+  exclude = ["/target"]

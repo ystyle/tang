@@ -6,8 +6,6 @@ import std.collection.{ArrayList, HashMap, HashSet}
 import std.io.{ByteBuffer, InputStream}
 import ystyle::tachyon.{RequestCtx, Server}
 import stdx.encoding.url.{UserInfo, Form}
-import stdx.serialization.serialization.*
-import stdx.encoding.json.stream.{JsonSerializable, JsonDeserializable, JsonWriter, JsonReader}
 import stdx.encoding.base64.fromBase64String
 import opencj::multipart.*
 import tang.radix.RouteParams
@@ -141,46 +139,16 @@ public class TangHttpContext {
         return bs
     }
 
-    public func bindJson<T>(): ?T where T <: JsonDeserializable<T> {
-        return T.fromJson(JsonReader(this.request.body))
-    }
+    // bindJson 已移到扩展成员（如 tang_ext_json_seajson 的 bindJson<T>(ctx)）
 
-    public func bindQuery<T>(value: T): T where T <: Serializable<T> {
-        let dm = value.serialize()
-        var dms = match (dm) {
-            case data: DataModelStruct => data
-            case _ => throw Exception("this data is not DataModelStruct")
-        }
-        let result = DataModelStruct()
-        let fields = dms.getFields()
-        let query = this.request.url.queryForm
-        query.keys()
-        for (f in fields) {
-            let name = f.getName()
-            let values = query.getAll(name)
-            let data = f.getData()
-            match (data) {
-                case val: DataModelInt =>
-                    if (let Some(v) <- Int64.tryParse(values[0])) {
-                        result.add(field<Int64>(name, v))
-                    }
-                    ()
-                case val: DataModelString =>
-                    result.add(field<String>(name, values[0]))
-                    ()
-                case val: DataModelFloat =>
-                    if (let Some(v) <- Float64.tryParse(values[0])) {
-                        result.add(field<Float64>(name, v))
-                    }
-                case val: DataModelBool =>
-                    if (let Some(v) <- Bool.tryParse(values[0])) {
-                        result.add(field<Bool>(name, v))
-                    }
-                case val: DataModelSeq => println("[tang] unknow field type")
-                case _ => println("[tang] unknow field type")
-            }
-        }
-        return T.deserialize(result)
+    /// 按 QueryBindable 接口绑定查询参数（core 零依赖；适配器版本见扩展成员）
+    public func bindQuery<T>(value: T): T where T <: QueryBindable {
+        let form = this.request.url.queryForm
+        let params = QueryParams({ k: String =>
+            form.get(k)
+        })
+        value.bindQuery(params)
+        return value
     }
 
     public func basicAuth(): Option<UserInfo> {
@@ -312,20 +280,26 @@ public class TangHttpContext {
         return Int64.tryParse(v??"")
     }
 
-    public func json<T>(value: T): Unit where T <: JsonSerializable  {
+    /// 用注册的 JSON codec 输出 JSON（codec 未注册时抛异常，便于尽早发现漏装适配器）
+    public func json<T>(value: T): Unit {
         this.jsonWithCode(200, value)
     }
 
-    public func jsonWithCode<T>(code: UInt16, value: T): Unit where T <: JsonSerializable  {
-        let stream = ByteBuffer()
-        let writer = JsonWriter(stream)
-        value.toJson(writer)
-        writer.flush()
-        stream.flush()
-        this.responseBuilder.status(code).body(stream.bytes())
+    public func jsonWithCode<T>(code: UInt16, value: T): Unit {
+        let codec = match (getJsonCodec()) {
+            case Some(c) => c
+            case None => throw Exception("没有注册 JSON codec：启动时调用 useSeaJson() 等适配器")
+        }
+        let sink = BufferJsonSink()
+        codec.encodeTo(sink, value)
+        sink.finish()
+        this.responseBuilder.status(code)
+        this.responseBuilder.header("Content-Type", codec.contentType())
+        this.responseBuilder.body(sink.toString())
     }
+    /// 只写 body，不动状态码（否则 ctx.status(400).writeString(...) 会被重置成 200）
     public func writeString<T>(value: T): Unit where T <: ToString {
-        this.writeStringWithCode(200, value)
+        this.responseBuilder.body(value.toString())
     }
 
     public func writeStringWithCode<T>(code: UInt16, value: T): Unit where T <: ToString {
