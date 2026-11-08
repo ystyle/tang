@@ -150,7 +150,7 @@ app.stop()
 
 ## 相关链接
 
-- **[与 stdx.http 互操作](stdx-interop.md)** - fromStd / register / ComposeDistributor / mount
+- **[与 stdx 互操作](stdx-interop.md)** - 本分支：fromStd 移到 tang_ext_stdx，register/ComposeDistributor 已移除
 - **[WebSocket 升级](context/websocket.md)** - WebSocket 双向通信
 - **[快速入门](../getting-started.md)** - 完整应用示例
 - **[框架概述](../overview.md)** - Tang 的设计理念
