@@ -5,6 +5,7 @@ package tang
 /// 2. 路径参数保留（:id → "123"）
 /// 3. 子 Router 中间件链保留（mount 前 wrap 的中间件原样重注册）
 /// 4. 父应用自身路由不受影响
+/// 5. all() 注册的路由 mount 后任意方法命中
 @Test
 class MountTest {
     @TestCase
@@ -29,29 +30,27 @@ class MountTest {
         // 挂载子应用
         app.mount("/api", subApp.getRouter())
 
-        let (base, server, client) = startTestServer(app)
+        let (srv, sock) = startTestServer(app.getRouter(), 18191u16)
 
         // ① 子路由带前缀生效 + 路径参数保留
-        let resp = client.get(base + "/api/users/123")
-        @Expect(resp.status, 200u16)
-        @Expect(readRespBody(resp), "user-123")
+        let resp = httpGet(18191u16, "/api/users/123")
+        @Expect(statusOf(resp), 200)
+        @Expect(bodyOf(resp), "user-123")
 
-        // ② 子中间件保留（mount 前 wrap 的中间件在重注册后仍生效）
-        if (let Some(v) <- resp.headers.getFirst("X-Sub-MW")) {
-            @Expect(v, "yes")
-        } else {
-            @Fail("子应用中间件 header 缺失，mount 未保留中间件链")
+        // ② 子中间件保留
+        match (headerOf(resp, "X-Sub-MW")) {
+            case Some(v) => @Expect(v, "yes")
+            case None => @Fail("子应用中间件 header 缺失，mount 未保留中间件链")
         }
 
         // ③ 父应用自身路由不受影响
-        let resp2 = client.get(base + "/ping")
-        @Expect(resp2.status, 200u16)
-        @Expect(readRespBody(resp2), "pong")
+        let resp2 = httpGet(18191u16, "/ping")
+        @Expect(statusOf(resp2), 200)
+        @Expect(bodyOf(resp2), "pong")
 
-        stopTestServer(server, client)
+        stopTestServer(srv, sock)
     }
 
-    /// 子应用用 all() 注册的路由，mount 后任意方法命中
     @TestCase
     func testMountAllMethod(): Unit {
         let app = Tang()
@@ -60,18 +59,18 @@ class MountTest {
 
         app.mount("/sub", subApp.getRouter())
 
-        let (base, server, client) = startTestServer(app)
+        let (srv, sock) = startTestServer(app.getRouter(), 18192u16)
 
         // GET 命中
-        let resp1 = client.get(base + "/sub/echo")
-        @Expect(resp1.status, 200u16)
-        @Expect(readRespBody(resp1), "echo")
+        let resp1 = httpGet(18192u16, "/sub/echo")
+        @Expect(statusOf(resp1), 200)
+        @Expect(bodyOf(resp1), "echo")
 
         // POST 命中（all 语义保留）
-        let resp2 = client.post(base + "/sub/echo", "x")
-        @Expect(resp2.status, 200u16)
-        @Expect(readRespBody(resp2), "echo")
+        let resp2 = httpPost(18192u16, "/sub/echo", "x")
+        @Expect(statusOf(resp2), 200)
+        @Expect(bodyOf(resp2), "echo")
 
-        stopTestServer(server, client)
+        stopTestServer(srv, sock)
     }
 }

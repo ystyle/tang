@@ -1,0 +1,23 @@
+# _disabled —— 暂不参与编译的文件
+
+这里的东西**不是被遗忘**，是当前分支（feat/tachyon-backend）下暂时无法编译，
+每条都写清了原因和后续做法。
+
+## 为什么移出
+
+HTTP 层已从 stdx.net.http 换成 tachyon，凡是直接依赖 stdx 类型的代码都要重写或重做。
+
+| 文件 | 原因 | 后续 |
+|---|---|---|
+| proxy/ | 依赖 stdx.net.http.Client（tang core 零 stdx） | 待做 HTTP 客户端能力（tachyon 目前只有服务端），或拆成 tang_ext_proxy 引 stdx 客户端 |
+| staticfile/ | 依赖 stdx FileHandler/FileHandlerType | 用 tachyon 的 FileServer 重写，拆到 tang_ext_static |
+| compose/ | ComposeDistributor 实现的是 stdx 的 HttpRequestDistributor | 按 tachyon 的 Router.handle 重做 |
+| fromstd_test.cj | 测 fromStd()（stdx handler 适配），该 API 已随 stdx 移除 | 若将来做 stdx 兼容层再恢复 |
+| router_register_test.cj | 测 stdx 风格的 Router.register(path, HttpRequestHandler) | 同上 |
+| compose_distributor_test.cj | 测上面的 ComposeDistributor | 同上 |
+
+## 已经重写回来的
+
+- mount_test.cj → 用 tachyon server + 裸 socket 客户端重写，已回到 tang/src
+- listen_test.cj → 同上（builder 回调 + stop 释放服务）
+- e2e 辅助在 tang/src/e2e_helpers_test.cj（零依赖：TcpServerSocket + TcpSocket）

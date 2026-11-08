@@ -48,16 +48,6 @@ public class HttpStatusCode {
     public static let STATUS_INTERNAL_SERVER_ERROR: UInt16 = 500
 }
 
-/// 日志级别（原 stdx.log.LogLevel 的最小替身）
-public enum LogLevel {
-    | OFF
-    | FATAL
-    | ERROR
-    | WARN
-    | INFO
-    | DEBUG
-    | TRACE
-}
 
 // ----------------------------------------------------------------------------
 // 请求头

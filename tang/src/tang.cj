@@ -2,6 +2,7 @@ package tang
 
 import ystyle::tachyon.Server
 import cjpminfo.*
+import tang.log.LogLevel
 
 ///
 /// Tang 应用类
