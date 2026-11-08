@@ -6,8 +6,31 @@
 
 ## 前置要求
 
-- 仓颉 SDK（1.0.0 或更高版本）
-- stdx（1.0.0 或更高版本）- 仓颉扩展库
+- 仓颉 SDK 1.2.0+
+- 核心零 stdx；只有用 `tang_ext_crypto` / `tang_ext_stdx` 时才需要 stdx
+
+## 本分支实测（tachyon 后端 vs 原 stdx 后端）
+
+同机 128 连接、20 秒、两轮，应用代码完全相同（`/hello` 返回固定字符串）：
+
+| 后端 | QPS | p50 | p99 | 每请求 CPU |
+|---|---:|---:|---:|---:|
+| stdx.net.http（1.0.x） | 256,800 / 244,994 | 410 / 430 µs | 1.99 / 2.07 ms | 27.5 / 28.6 µs |
+| **tachyon（本分支）** | **537,095 / 522,024** | 215 / 220 µs | **0.92 / 0.94 ms** | **12.3 / 12.7 µs** |
+
+- 吞吐约 **2.1 倍**，每请求 CPU 约 **1/2.2**，p99 约 **1/2.2**
+- 服务端 RSS：tachyon 约 230 MB，stdx 约 110–170 MB（tachyon 用了更大的读写缓冲换吞吐）
+- 中间件开销：`requestid + cors` 约 1–2%，p99 无恶化
+
+更完整的剖析（含 runtime `sched_yield` 定位、跨机/弱机数据）见
+[为什么比 stdx.net.http 快](https://github.com/ystyle/cangjie-runtime-issue-3577-repro)。
+
+### requestid 曾把吞吐卡在 2.5 万/秒
+
+旧 `requestid` 用 sonyflake：全局 Mutex + 8 bit 序列（每 10ms 只能出 256 个 ID，
+超出就 sleep 等时钟片）+ 序列回绕时 `println`。单线程实测仅 **2.49 万 ID/秒**，
+也就是说这个中间件本身把服务端吞吐封顶在 2.5 万 req/s。
+现已改为 `<启动秒>-<AtomicInt64 自增>`，无锁、无时钟依赖。
 
 ## Tang 性能特性
 

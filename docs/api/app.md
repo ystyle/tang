@@ -1,5 +1,7 @@
 # Tang 应用生命周期
 
+> **本分支说明**：本页的 server 相关 API 仍按 1.0.x（stdx.net.http）描述；本分支底层换成 tachyon，getStdServer() 返回 tachyon Server。
+
 ## 概述
 
 从 `1.0.3` 开始，`Tang` 应用类提供完整的生命周期管理能力：优雅停止、shutdown 回调以及底层服务器访问。
@@ -148,7 +150,7 @@ app.stop()
 
 ## 相关链接
 
-- **[与 stdx.http 互操作](stdx-interop.md)** - fromStd / register / ComposeDistributor / mount
+- **[与 stdx 互操作](stdx-interop.md)** - 本分支：fromStd 移到 tang_ext_stdx，register/ComposeDistributor 已移除
 - **[WebSocket 升级](context/websocket.md)** - WebSocket 双向通信
 - **[快速入门](../getting-started.md)** - 完整应用示例
 - **[框架概述](../overview.md)** - Tang 的设计理念

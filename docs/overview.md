@@ -58,15 +58,16 @@ Tang 在设计时始终考虑性能：
 ┌─────────────────────────────────────────┐
 │          Client (Browser/cURL)          │
 └─────────────────┬───────────────────────┘
-                  │ HTTP Request
+                  │ HTTP/1.1
 ┌─────────────────▼───────────────────────┐
-│          Server (stdx HTTP)             │
+│      tachyon（fasthttp 风格服务器）      │
+│  零分配解析 / Bytes 视图 / 单连接循环      │
 └─────────────────┬───────────────────────┘
-                  │
+                  │ RequestCtx
 ┌─────────────────▼───────────────────────┐
 │            Tang Router                  │
 │  ┌──────────────────────────────────┐  │
-│  │      Radix Tree Routing         │  │
+│  │      Radix Tree Routing          │  │
 │  └──────────────────────────────────┘  │
 │  ┌──────────────────────────────────┐  │
 │  │      Middleware Pipeline         │  │
@@ -74,16 +75,30 @@ Tang 在设计时始终考虑性能：
 └─────────────────┬───────────────────────┘
                   │
 ┌─────────────────▼───────────────────────┐
-│         TangHttpContext                │
+│         TangHttpContext                 │
 │  ┌──────────────┬───────────────────┐   │
 │  │   Request    │     Response      │   │
-│  │  - Query     │  - Status        │   │
-│  │  - Param     │  - Headers       │   │
-│  │  - Body      │  - Body          │   │
-│  │  - Headers   │  - JSON          │   │
+│  │  - Query     │  - Status         │   │
+│  │  - Param     │  - Headers        │   │
+│  │  - Body      │  - Body           │   │
+│  │  - Headers   │  - JSON(codec)    │   │
 │  └──────────────┴───────────────────┘   │
 └─────────────────────────────────────────┘
 ```
+
+## 模块划分（workspace）
+
+本仓是 cjpm workspace，按能力拆开，**核心零 stdx**：
+
+| 成员 | 依赖 | 提供什么 |
+|---|---|---|
+| `tang` | std + tachyon | 路由、上下文、16 个中间件、`tang.testing`、日志门面 |
+| `tang_ext_json_seajson` | + seajson | JSON 编解码（`ctx.json` 的 codec 实现、`bindJson`） |
+| `tang_ext_crypto` | + stdx.crypto | csrf / session / encryptcookie / etag / idempotency |
+| `tang_ext_stdx` | + stdx.net.http | stdx 兼容层（`serve` + `fromStd`） |
+
+这样做的原因与接口设计（`JsonCodec` / `JsonSink` / `Logger` / `QueryBindable`）
+见 [零 stdx 化方案](design/zero-stdx-workspace.md)。
 
 ## 核心组件
 

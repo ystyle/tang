@@ -1,4 +1,11 @@
 
+
+> **本分支变更**：
+> - `ctx.bindJson<T>()` 已移到适配器，改为 `tang_ext_json_seajson.bindJson<T>(ctx)`
+> - `ctx.bindQuery<T>(v)` 改为基于 core 的 `QueryBindable` 接口（不再依赖 stdx.serialization）
+>
+> 详见 [迁移指南](../../MIGRATION.md)。
+
 # 请求处理
 
 ## 概述

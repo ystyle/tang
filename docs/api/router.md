@@ -1,4 +1,7 @@
 
+
+> **本分支说明**：本页的 register() / fromStd / ComposeDistributor 相关内容属于 1.0.x；本分支已移除或移到 tang_ext_stdx。
+
 # Router
 
 ## 概述
@@ -185,23 +188,29 @@ r.all("/webhook", { ctx =>
 
 `Router` 实现了 `HttpRequestDistributor` 接口的 `register()`，可按 stdx 语义**路径级注册**（不区分 HTTP 方法，等价于 `all()`）：
 
+本分支不再提供 `register()`（stdx 风格注册）。等价写法：
+
 ```cj
-import stdx.net.http.{HttpContext}
+import tang.*
+import tang_ext_stdx.fromStd
+import stdx.net.http.HttpContext
 
-let r = Router()
+let app = Tang()
 
-// 函数式：任意 HTTP 方法（GET/POST/PUT/DELETE...）都能命中
-r.register("/ping", { ctx: HttpContext =>
+// tang 原生路由
+app.all("/ping", { ctx => ctx.writeString("pong") })
+
+// 存量 stdx handler：只能配合 tang_ext_stdx.serve 使用（需要真的 stdx 上下文）
+app.get("/legacy", fromStd({ ctx: HttpContext =>
     ctx.responseBuilder.body("pong")
-})
-
-// 类式：任意 HttpRequestHandler（FuncHandler / FileHandler / NotFoundHandler 等）
-r.register("/file", fromStd(FileHandler("./public", handlerType: FileHandlerType.DownLoad)))
+}))
 ```
+
+静态文件用 `tang.middleware.staticfile`（基于 tachyon `FileServer`），不需要 `FileHandler`。
 
 - 路径支持 `:param` / `*` 语法（走同一条 radix tree）
 - 转换后自动享受所在 group 的中间件链
-- 与 stdx 默认 distributor 语义一致，可无差别替换
+- 本分支不再有 stdx distributor 语义；`fromStd` 只在 `tang_ext_stdx.serve` 下生效
 
 ## 子应用挂载 mount()
 
@@ -613,5 +622,5 @@ r.get("/users", { ctx =>
 ## 相关链接
 
 - **[Group API](group.md)** - 路由组详细文档
-- **[Radix Tree 原理](../advanced/radix-tree-routing.md)** - 深入理解路由实现
+- **Radix Tree 原理** - 源码见 `tang/src/radix/`（node.cj / router_tree.cj）
 - **[源码](../../src/router.cj)** - Router 类源代码

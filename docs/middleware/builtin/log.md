@@ -1,5 +1,9 @@
 # Logger - 请求日志
 
+> **本分支变更**：日志不再依赖 `stdx.log`，改用 core 自带的日志门面 `tang.log`
+> （`LogLevel` / `LogValue` / `Logger` + 内置 `DefaultLogger`，支持 Text / JSON 两种输出）。
+> 需要接 stdx 或其它日志实现时，用 `setLogger()` 注入。
+
 ## 概述
 
 - **功能**：记录每个 HTTP 请求的基本信息

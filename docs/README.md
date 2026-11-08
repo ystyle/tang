@@ -1,5 +1,11 @@
-
 # Tang Web 框架文档
+
+> **本分支状态（feat/tachyon-backend）**
+>
+> HTTP 层已从 `stdx.net.http` 换成 tachyon，tang 拆成 workspace，**核心零 stdx**。
+> 部分 API 文档（`api/*`）仍按 1.0.x 描述，逐项改动见 **[迁移指南](MIGRATION.md)**；
+> 新增能力见 **[测试框架](testing.md)**、**[stdx 兼容层](stdx-compat.md)**、
+> **[零 stdx 化方案](design/zero-stdx-workspace.md)**。
 
 欢迎来到 Tang 框架文档！Tang 是一个基于仓颉语言构建的高性能 Web 框架，受到 [Fiber](https://github.com/gofiber/fiber) 的启发，提供了简洁优雅的链式 API 和强大的中间件生态系统。
 
@@ -7,7 +13,7 @@
 
 - **🚀 高性能路由**：基于 Radix Tree 实现的路由系统，支持动态参数和通配符
 - **⛓️ 链式 API**：Fiber 风格的流畅 API 设计，提升开发体验
-- **🔌 中间件系统**：23+ 内置中间件，覆盖日志、安全、认证、缓存等场景
+- **🔌 中间件系统**：16 个零依赖中间件（核心）+ 5 个加密类（扩展成员）
 - **🎯 RESTful 支持**：轻松构建 REST API 和 Web 服务
 - **💡 简洁易用**：清晰的 API 设计，快速上手
 
@@ -23,7 +29,8 @@
 - **[Tang 应用](api/app.md)** - 应用生命周期、优雅停止与 shutdown 回调
 - **[Router](api/router.md)** - 路由系统 API 参考
 - **[Group](api/group.md)** - 路由分组 API 参考
-- **[与 stdx.http 互操作](api/stdx-interop.md)** - fromStd / register / ComposeDistributor / mount
+- **[ComposeRouter](api/compose.md)** - 按前缀组合多个子系统
+- **[与 stdx 互操作](api/stdx-interop.md)** - 本分支改为 tang_ext_stdx（serve + fromStd）
 - **[TangHttpContext](api/context/)** - HTTP 上下文 API
   - [请求处理](api/context/request.md) - Query、Param、Body 解析
   - [响应操作](api/context/response.md) - 状态码、Headers、JSON 响应

@@ -1,44 +1,12 @@
-[dependencies]
-  "sonyflake" = "1.0.9"
-  "opencj::multipart" = "0.1.3"
-  "cjpminfo" = "1.2.1"
+[workspace]
+  members = ["tang", "tang_ext_json_seajson", "tang_ext_crypto", "tang_ext_stdx"]
+  build-members = ["tang", "tang_ext_json_seajson", "tang_ext_crypto", "tang_ext_stdx"]
+  test-members = ["tang", "tang_ext_stdx"]
 
-[package]
-  cjc-version = "1.1.0"
-  compile-option = "-O2 -Woff unused"
-  description = "一个轻量级的web框架"
-  link-option = ""
-  name = "tang"
-  output-type = "static"
-  src-dir = "src"
-  target-dir = ""
-  version = "1.0.6"
-  # 制品清单（include/exclude 用 gitignore 风格的模式）：
-  #   带：src/**（含 *_test.cj）+ README/LICENSE/cjpm.toml
-  #   不带：docs/（设计文档）、examples/（独立示例工程）、scripts/、target/
-  # 只有 exclude 能挡住目录：include 不写会整棵工作树打包，写了也不等于白名单。
-  include = ["src", "LICENSE"]
-  exclude = ["/docs", "/examples", "/scripts", "/target", "AGENTS.md"]
-  license = ["MulanPSL-2.0"]
-  authors = ["ystyle"]
-  repository = "https://atomgit.com/ystyle/tang"
-
-[target.x86_64-unknown-linux-gnu]
-  # stdx.net.http 的静态库引用 SHA1（WS accept-key）→ 单测链接需要 digest，
-  # 否则报 undefined reference to `DYN_SHA1` / MallocDynMsg / FreeDynMsg。
-  # 只放 target 级：package 级会传染宏包链接（见 cjxt/AGENTS.md 同款记录）。
-  link-option = "-L${CANGJIE_STDX_PATH} -lstdx.crypto.digest"
-
+# stdx 只在扩展成员里用（crypto / stdx 兼容层）。核心与 JSON 成员零 stdx，
+# 但 workspace 模式下 target 级配置要在根上声明，成员才能解析到 stdx 的 .cjo。
 [target.x86_64-unknown-linux-gnu.bin-dependencies]
   path-option = ["${CANGJIE_STDX_PATH}"]
-[target.x86_64-apple-darwin.bin-dependencies]
-  path-option = ["${CANGJIE_STDX_PATH}"]
-[target.x86_64-w64-mingw32.bin-dependencies]
-  path-option = ["${CANGJIE_STDX_PATH}"]
-[target.aarch64-linux-ohos.bin-dependencies]
-  path-option = ["${CANGJIE_STDX_PATH}"]
-[target.x86_64-linux-ohos.bin-dependencies]
-  path-option = ["${CANGJIE_STDX_PATH}"]
 
-[profile.build]
-incremental = false
+[target.x86_64-unknown-linux-gnu]
+  link-option = "-L${CANGJIE_STDX_PATH}"

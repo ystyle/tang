@@ -1,5 +1,10 @@
 # CSRF - 跨站请求伪造保护
 
+> **本分支变更**：该中间件已移到扩展成员 `tang_ext_crypto` 以保持核心零 stdx。
+> import 从 `tang.middleware.csrf.*` 改为 `tang_ext_crypto.csrf.*`，
+> 并需要在 `cjpm.toml` 里加 `tang_ext_crypto` 依赖（含 `CANGJIE_STDX_PATH` 环境）。
+> 详见 [迁移指南](../../MIGRATION.md)。
+
 ## 概述
 
 - **功能**：防止跨站请求伪造（Cross-Site Request Forgery）攻击

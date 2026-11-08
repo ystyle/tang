@@ -8,14 +8,40 @@
 - 推送需走 github 主仓库：`git push github master`（或 `git push github <branch>`）。
 - 镜像侧如需更新，须在 atomgit/gitcode 网页端关闭镜像模式或手动触发同步。
 
+# 工程结构（feat/tachyon-backend 分支起）
+
+本仓是 **cjpm workspace**，四个成员，按需引入——**核心零 stdx**：
+
+| 成员 | 依赖 | 说明 |
+|---|---|---|
+| `tang/` | std + `ystyle::tachyon` | 核心：路由、上下文、17 个中间件（含反向代理）、`tang.testing`、日志门面、`tang.http` 客户端 |
+| `tang_ext_json_seajson/` | + seajson | JSON 编解码（`ctx.json` 的 codec、`bindJson`），零 stdx |
+| `tang_ext_crypto/` | + stdx.crypto | csrf / session / encryptcookie / etag / idempotency |
+| `tang_ext_stdx/` | + stdx.net.http | stdx 兼容层（`serve` + `fromStd`） |
+
+**硬约束**：`tang/` 下不得出现 `import stdx` 或 stdx 依赖配置。
+判据：`grep -rn 'stdx' tang/src/ tang/cjpm.toml` 只应命中注释。
+
 # 项目操作
 
 ```shell
-cjpm clean # 清除构建缓存
-cjpm build # 构建
-cjpm run   # 运行项目
-./target/release/bin/main #手动运行
+eval "$(cjvs env zsh)"                 # 核心构建只需要这个
+eval "$(cjvs stdx-env zsh)"            # 构建含 stdx 的扩展成员时才需要
+
+cjpm clean                 # 清除构建缓存
+cjpm build -j 8            # 构建整个 workspace
+cjpm test -j 4             # 跑测试（test-members = tang + tang_ext_stdx）
+cjpm run                   # 运行项目
+./target/release/bin/main  # 手动运行
+
+# 只构建核心（验证零 stdx：清空环境变量后仍应成功）
+env -u CANGJIE_STDX_PATH bash -c 'cd tang && cjpm build'
 ```
+
+测试相关：
+- e2e 用裸 socket 客户端（`tang/src/e2e_helpers_test.cj`），测试不引入 stdx
+- 业务逻辑测试优先用 `tang.testing`（`test(app, TestRequest.get("/x"))`，不起服务）
+- `test-members` 里**没列的成员，测试不会跑**——加扩展成员记得同步 root `cjpm.toml`
 
 # 关于仓颉语法和API
 - 如果不清楚一个语言特性，可以使用mcp工具查找仓颉手册内容
