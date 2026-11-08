@@ -140,10 +140,9 @@ public func newCors(opts: Array<CorsOption>): MiddlewareFunc {
             }
 
             // 检查是否是预检请求（OPTIONS 且有 Access-Control-Request-Method 头）
-            let isPreflight = method == "OPTIONS" && match (request.headers.getFirst("Access-Control-Request-Method")) {
-                case Some(_) => true
-                case None => false
-            }
+            // 先取值再判定：&& 右侧直接放调用会被 lint 判为副作用
+            let acrm = request.headers.getFirst("Access-Control-Request-Method")
+            let isPreflight = method == "OPTIONS" && acrm.isSome()
 
             // 设置 Access-Control-Allow-Origin
             if (config.allowedOrigins.contains("*")) {
@@ -224,10 +223,9 @@ public func newCors(): MiddlewareFunc {
             }
 
             // 检查是否是预检请求（OPTIONS 且有 Access-Control-Request-Method 头）
-            let isPreflight = method == "OPTIONS" && match (request.headers.getFirst("Access-Control-Request-Method")) {
-                case Some(_) => true
-                case None => false
-            }
+            // 先取值再判定：&& 右侧直接放调用会被 lint 判为副作用
+            let acrm = request.headers.getFirst("Access-Control-Request-Method")
+            let isPreflight = method == "OPTIONS" && acrm.isSome()
 
             // 设置 Access-Control-Allow-Origin
             if (config.allowedOrigins.contains("*")) {

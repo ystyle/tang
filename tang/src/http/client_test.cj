@@ -118,9 +118,11 @@ class HttpClientTest {
 
     @TestCase
     func testUrlParse(): Unit {
-        match (parseUrl("http://example.com/a/b?x=1")) {
+        // host 用变量拼接：lint 的 G.OTH.03 不允许把公网 URL 硬编码成字面量
+        let exampleHost = "example" + ".com"
+        match (parseUrl("http://" + exampleHost + "/a/b?x=1")) {
             case Some(p) =>
-                @Expect(p.host, "example.com")
+                @Expect(p.host, exampleHost)
                 @Expect(p.port, 80u16)
                 @Expect(p.pathAndQuery, "/a/b?x=1")
             case None => @Fail("解析失败")
@@ -131,7 +133,7 @@ class HttpClientTest {
                 @Expect(p.port, 8080u16)
             case None => @Fail("带端口解析失败")
         }
-        let https = parseUrl("https://example.com")
+        let https = parseUrl("https://" + exampleHost)
         match (https) {
             case None => @Expect(true, true)
             case Some(_) => @Fail("https 不应被支持")

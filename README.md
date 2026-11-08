@@ -21,12 +21,12 @@
 
 | 成员 | 依赖 | 说明 |
 |---|---|---|
-| **`tang`** | std + tachyon | 核心：路由、上下文、16 个中间件、测试框架、日志门面。**零 stdx** |
+| **`tang`** | std + tachyon | 核心：路由、上下文、17 个中间件（含反向代理）、测试框架、日志门面。**零 stdx** |
 | `tang_ext_json_seajson` | + [seajson](https://pkg.cangjie-lang.cn/package/SeaJson) | JSON 编解码（SeaJSON，零 stdx） |
 | `tang_ext_crypto` | + stdx.crypto | csrf / session / encryptcookie / etag / idempotency |
 | `tang_ext_stdx` | + stdx.net.http | stdx 兼容层：tang 应用跑在 stdx server 上，复用 stdx 风格 handler |
 
-> **本分支（`feat/tachyon-backend`）尚未发布**。已发布的 `tang 1.0.6` 仍是 stdx.net.http 后端。
+> **v2.0.0 已发布**（HTTP 层换 tachyon、核心零 stdx，属破坏性变更，见 [迁移指南](docs/MIGRATION.md)）。
 
 ## ⚙️ 环境要求
 
@@ -56,7 +56,7 @@ main() {
 
 ```toml
 [dependencies]
-  "tang" = { git = "https://github.com/ystyle/tang.git", branch = "feat/tachyon-backend" }
+  "tang" = "2.0.0"
 ```
 
 ### 返回 JSON
@@ -67,8 +67,19 @@ JSON 需要注册编解码器（适配器模式，核心不绑定具体 JSON 库
 import tang.*
 import tang_ext_json_seajson.*
 
-public class User <: seaJsonEncodable {   // 实际请实现 seajson 的 JsonEncodable / JsonWriterEncodable
-    ...
+// 实现 seajson 的契约（JsonWriterEncodable 走流式，JsonEncodable 走整段）
+public class User <: JsonWriterEncodable {
+    public var name: String = ""
+    public var age: Int64 = 0
+    public init() {}
+    public func writeJson(w: JsonWriter): Unit {
+        w.beginObject()
+        w.name("name")
+        w.value(name)
+        w.name("age")
+        w.value(age)
+        w.endObject()
+    }
 }
 
 main() {
