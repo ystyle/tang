@@ -2,9 +2,8 @@ package tang.middleware.accesslog
 
 import std.time.DateTime
 import std.collection.ArrayList
-import stdx.log.LogValue
 import tang.{MiddlewareFunc, TangHttpContext}
-import tang.log.getLogger
+import tang.log.{getLogger, LogValue}
 
 /// 访问日志配置选项
 public type AccessLogOption = (AccessLogConfig) -> Unit
@@ -119,43 +118,43 @@ public func newAccessLog(opts: Array<AccessLogOption>): MiddlewareFunc {
             var attrs = ArrayList<(String, LogValue)>()
 
             if (config.method) {
-                attrs.add(("method", method.toString()))
+                attrs.add(("method", LogValue.VString(method.toString())))
             }
 
             if (config.path) {
-                attrs.add(("path", url.path))
+                attrs.add(("path", LogValue.VString(url.path)))
             }
 
             if (config.status) {
-                attrs.add(("status", "${code}"))
+                attrs.add(("status", LogValue.VInt(Int64(code))))
             }
 
             if (config.latency) {
-                attrs.add(("latency", "${latency}"))
+                attrs.add(("latency", LogValue.VString(latency.toString())))
             }
 
             if (config.requestID) {
                 let rid = ctx.requestid()
                 if (let Some(v) <- rid) {
-                    attrs.add(("requestid", v))
+                    attrs.add(("requestid", LogValue.VString(v)))
                 }
             }
 
             if (config.userAgent) {
                 let ua = ctx.request.headers.getFirst("User-Agent")
                 if (let Some(v) <- ua) {
-                    attrs.add(("useragent", v))
+                    attrs.add(("useragent", LogValue.VString(v)))
                 }
             }
 
             if (config.clientIP) {
                 let ip = ctx.request.headers.getFirst("X-Real-IP")
                 if (let Some(v) <- ip) {
-                    attrs.add(("clientip", v))
+                    attrs.add(("clientip", LogValue.VString(v)))
                 } else {
                     let xff = ctx.request.headers.getFirst("X-Forwarded-For")
                     if (let Some(v) <- xff) {
-                        attrs.add(("clientip", v))
+                        attrs.add(("clientip", LogValue.VString(v)))
                     }
                 }
             }

@@ -1,7 +1,7 @@
 package tang.middleware.exception
 
 import tang.{MiddlewareFunc, TangHttpContext, HttpStatusCode}
-import tang.log.getLogger
+import tang.log.{getLogger, LogValue}
 
 /// 异常处理器类型
 public type ExceptionHandler = (TangHttpContext, Exception) -> Unit
@@ -114,7 +114,7 @@ public func newRecovery(opts: Array<RecoveryOption>): MiddlewareFunc {
 
                 // 记录日志
                 if (config.enableLog) {
-                    log.error("exception caught", ("error", e.toString()))
+                    log.error("exception caught", ("error", LogValue.VString(e.toString())))
                 }
 
                 // 使用自定义处理器或默认处理
